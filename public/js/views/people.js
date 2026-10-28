@@ -1,5 +1,5 @@
 // Profiles, the Hall of Souls leaderboard, and the moderation queue.
-import { el, icon, avatar, fmtDate, toast } from '../ui.js';
+import { el, icon, avatar, fmtDate, toast, plural } from '../ui.js';
 import { api, post } from '../api.js';
 import { state } from '../state.js';
 import { graveCard, emptyState, statusPill } from '../components.js';
@@ -60,10 +60,10 @@ export async function leaderboardView(main) {
     el('section', { class: 'lb-hero' }, el('h1', { text: 'Hall of fame' }), el('p', { text: 'The builders who bring ideas back, and the problems readers most want solved.' })),
     el('div', { class: 'lb' },
       el('section', { class: 'card' }, el('h2', { text: 'Top revivers' }),
-        rank(lb.builders, u => u.resurrections, u => `${u.resurrections} revivals · ${u.launched} launched · ${u.building} building`)),
+        rank(lb.builders, u => u.resurrections, u => `${plural(u.resurrections, 'revival')} · ${u.launched} launched · ${u.building} building`)),
       el('section', { class: 'card' }, el('h2', { text: 'Most wanted problems' }), ideaRank(lb.mostWanted, it => it.counts.same, 'people with this problem')),
       el('section', { class: 'card' }, el('h2', { text: 'Most mourned' }), ideaRank(lb.mostMourned, it => it.counts.candles, 'candles')),
-      el('section', { class: 'card' }, el('h2', { text: 'Most prolific founders' }), rank(lb.gravediggers, u => u.buried, u => `${u.candles} candles received`)),
+      el('section', { class: 'card' }, el('h2', { text: 'Most prolific founders' }), rank(lb.gravediggers, u => u.buried, u => `${plural(u.candles, 'candle')} received`)),
       el('section', { class: 'card' }, el('h2', { text: 'Leading causes of death' }), bars))));
   reveal([...main.querySelectorAll('.lb .card')]);
   const barsCard = bars.closest('.card');
