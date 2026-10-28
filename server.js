@@ -82,7 +82,10 @@ function createApp(opts = {}) {
   const trustProxy = env.TRUST_PROXY === '1';
   const limit = createLimiter();
   const autopsyInFlight = new Map();
-  const shellHtml = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8');
+  // in development, re-read the shell so edits to index.html show up without a restart
+  const shellFile = path.join(PUBLIC, 'index.html');
+  const cachedShell = fs.readFileSync(shellFile, 'utf8');
+  const readShell = () => (env.NODE_ENV === 'production' ? cachedShell : fs.readFileSync(shellFile, 'utf8'));
 
   // ---------- live events (server-sent events) ----------
   const streams = new Set();
@@ -557,7 +560,7 @@ function createApp(opts = {}) {
 
   // ---------- static + SPA shell ----------
   function serveShell(res, url) {
-    let html = shellHtml;
+    let html = readShell();
     const m = url.pathname.match(/^\/idea\/([\w-]{1,64})$/);
     const idea = m && q.ideaRow.get(m[1]);
     if (idea && !idea.hidden) {

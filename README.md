@@ -25,7 +25,7 @@ Built by Sakshar Dhawan.
 **Discovery**
 - Trending, fresh, most wanted, most mourned, risen and oldest sorts; filters by status, cause of death and tag
 - Search palette (`/` or `⌘K`) across ideas, problems and founders
-- Hall of Souls: top resurrectionists, top gravediggers, most wanted problems, most mourned ideas and the leading causes of death
+- Hall of fame: top revivers, most prolific founders, most wanted problems, most mourned ideas and the leading causes of death
 - Live ticker over server-sent events: see burials, resurrections and launches as they happen
 
 **Accounts and safety**
@@ -36,7 +36,7 @@ Built by Sakshar Dhawan.
 ## Stack
 
 - **Backend:** Node.js 22.13+ with the built-in `node:sqlite` (SQLite in WAL mode). No web framework.
-- **Frontend:** vanilla ES modules and hand-written CSS. No build step.
+- **Frontend:** vanilla ES modules and a hand-written editorial design system (Instrument Serif, Inter, IBM Plex Mono). No build step.
 - **AI:** Claude Opus 5.5 through the official Anthropic SDK with structured JSON output.
 - **Ops:** Dockerfile, Render blueprint with a persistent disk, GitHub Actions CI.
 
