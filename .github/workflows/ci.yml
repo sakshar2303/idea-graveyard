@@ -10,5 +10,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
+          cache: npm
+      - run: npm ci
       - run: npm test
+      - name: Check frontend modules parse
+        run: for f in public/js/*.js public/js/views/*.js; do node --check "$f" || exit 1; done

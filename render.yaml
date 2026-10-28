@@ -5,8 +5,10 @@ services:
     plan: starter
     healthCheckPath: /healthz
     envVars:
-      - key: ADMIN_TOKEN
-        generateValue: true
+      - key: ADMIN_USERNAMES
+        value: sakshar
+      - key: ANTHROPIC_API_KEY
+        sync: false
     disk:
       name: data
       mountPath: /data
