@@ -5,57 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Idea Graveyard</title>
 <meta name="author" content="Sakshar Dhawan">
-<meta name="description" content="Bury your abandoned ideas with an epitaph. Resurrect someone else's and build it.">
-<meta name="theme-color" content="#06070b">
+<meta name="description" content="Obituaries for startup ideas. Bury yours, and revive someone else's.">
+<meta name="theme-color" content="#f4f1ea">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Idea Graveyard">
 <meta property="og:title" content="Idea Graveyard">
-<meta property="og:description" content="Bury your abandoned ideas with an epitaph. Resurrect someone else's and build it.">
+<meta property="og:description" content="Obituaries for startup ideas. Bury yours, and revive someone else's.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Cormorant+Garamond:ital,wght@0,500;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="/css/app.css">
 <script type="module" src="/js/app.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="sky" aria-hidden="true">
-  <div class="stars"></div>
-  <div class="moon"></div>
-  <div class="fog fog-a"></div>
-  <div class="fog fog-b"></div>
-  <div class="embers" id="embers"></div>
-</div>
-
-<header class="nav" id="nav">
-  <a href="/" class="brand" data-link>
-    <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 29V13a8 8 0 0 1 16 0v16z" /><path class="cross" d="M16 9v10M12 13h8" /></svg>
-    <span>Idea Graveyard</span>
-  </a>
-  <nav class="nav-links" aria-label="Main">
-    <a href="/" data-link data-nav="home">Graveyard</a>
-    <a href="/leaderboard" data-link data-nav="leaderboard">Hall of Souls</a>
-  </nav>
-  <button class="search-trigger" id="searchBtn" aria-label="Search ideas">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-    <span>Search the graves</span><kbd>/</kbd>
-  </button>
-  <div class="nav-actions" id="navActions"></div>
-</header>
-
 <div class="progress" aria-hidden="true"></div>
 
-<main id="main" tabindex="-1"></main>
+<header class="masthead">
+  <div class="wrap">
+    <div class="topline">
+      <span class="topline-date" id="edition"></span>
+      <div class="nav-actions" id="navActions"></div>
+    </div>
+    <a href="/" class="wordmark" data-link aria-label="Idea Graveyard home">Idea Graveyard</a>
+    <p class="tagline">Obituaries for startup ideas, and the people who bring them back.</p>
+  </div>
+  <nav class="sections" aria-label="Sections">
+    <div class="wrap sections-inner">
+      <a href="/" data-link data-nav="/">Front page</a>
+      <a href="/?sort=wanted" data-link data-nav="/?sort=wanted">Most wanted</a>
+      <a href="/?sort=risen" data-link data-nav="/?sort=risen">Revivals</a>
+      <a href="/leaderboard" data-link data-nav="/leaderboard">Hall of fame</a>
+      <button class="search-trigger" id="searchBtn" type="button" aria-label="Search obituaries">
+        <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m20 20-3.5-3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Search</span><kbd>/</kbd>
+      </button>
+    </div>
+  </nav>
+</header>
 
-<div class="ticker" id="ticker" aria-live="polite" hidden><span class="ticker-dot"></span><span id="tickerText"></span></div>
+<main id="main" class="wrap" tabindex="-1"></main>
 
-<footer class="footer">
-  <p>Built by <strong>Sakshar Dhawan</strong> · Every idea deserves a second life.</p>
+<div class="ticker" id="ticker" aria-live="polite" hidden><span class="ticker-label">Just in</span><span id="tickerText"></span></div>
+
+<footer class="colophon">
+  <div class="wrap colophon-inner">
+    <span class="wordmark-sm">Idea Graveyard</span>
+    <span>Designed and built by Sakshar Dhawan</span>
+    <span>Every idea deserves a second life.</span>
+  </div>
 </footer>
 
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
-<div class="fx" id="fx" aria-hidden="true"></div>
 </body>
 </html>
