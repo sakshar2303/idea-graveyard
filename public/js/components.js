@@ -3,14 +3,16 @@ import { el, fmtDate, bump, toast, plural } from './ui.js';
 import { post } from './api.js';
 import { requireAuth } from './state.js';
 import { openResurrect } from './dialogs.js';
+import { engraving } from './engraving.js';
 
 const STATUS_LABEL = { dead: 'Deceased', planning: 'Revival planned', building: 'Revival underway', launched: 'Revived' };
 export const statusPill = s => el('span', { class: `status st-${s}`, text: STATUS_LABEL[s] || s });
 
 // small-caps line above a headline: the status for revived ideas, the cause otherwise
-export function kicker(idea) {
-  return idea.status === 'dead'
-    ? el('div', { class: 'kicker' }, el('span', { text: 'Cause of death' }), idea.cause)
+export function kicker(idea, { short = false } = {}) {
+  if (idea.status === 'dead') return short ? el('div', { class: 'kicker', text: idea.cause })
+    : el('div', { class: 'kicker' }, el('span', { text: 'Cause of death' }), idea.cause);
+  return short ? el('div', { class: `kicker revived st-${idea.status}` }, el('span', { class: 'only', text: STATUS_LABEL[idea.status] }))
     : el('div', { class: `kicker revived st-${idea.status}` }, el('span', { text: STATUS_LABEL[idea.status] }), idea.cause);
 }
 
@@ -41,7 +43,7 @@ export function actionBar(idea, { onChange } = {}) {
         onChange?.(idea);
       } catch (err) { toast(err.message, 'error'); }
     },
-  }, el('span', { class: 'act-label', text: label }), el('span', { class: 'act-n', text: count }));
+  }, kind === 'candle' ? el('span', { class: 'flame', 'aria-hidden': 'true' }) : null, el('span', { class: 'act-label', text: label }), el('span', { class: 'act-n', text: count }));
   return el('div', { class: 'actions' },
     mk('candle', mine.candle ? 'Candle lit' : 'Candle', idea.counts.candles, mine.candle),
     mk('same', 'Me too', idea.counts.same, mine.same),
@@ -53,13 +55,15 @@ export function graveCard(idea) {
   const holder = el('div', { class: 'cell' });
   const paint = () => {
     const entry = el('article', { class: `obit${idea.status !== 'dead' ? ' is-revived' : ''}` },
-      kicker(idea),
-      el('h3', { class: 'obit-title' }, el('a', { class: 'stone-link', href: `/idea/${idea.id}`, 'data-link': true, text: idea.title })),
+      el('div', { class: 'obit-plate' }, engraving(idea.id, idea.title, { size: 52 })),
+      kicker(idea, { short: true }),
+      el('h3', { class: 'obit-title' }, el('a', { class: 'stone-link', href: `/idea/${idea.id}`, 'data-link': true }, el('span', { class: 'ul', text: idea.title }))),
       el('p', { class: 'obit-epitaph', text: `“${idea.epitaph}”` }),
       el('p', { class: 'obit-meta' }, `Buried ${fmtDate(idea.buriedAt)} by `,
         el('a', { href: `/u/${encodeURIComponent(idea.author.username)}`, 'data-link': true, text: idea.author.displayName })),
       survivedBy(idea),
-      actionBar(idea, { onChange: updated => { Object.assign(idea, updated); paint(); } }));
+      el('div', { class: 'obit-foot' }, actionBar(idea, { onChange: updated => { Object.assign(idea, updated); paint(); } }),
+        el('a', { class: 'read', href: `/idea/${idea.id}`, 'data-link': true, 'aria-label': `Read the obituary for ${idea.title}` }, 'Read', el('span', { class: 'arrow', text: '→' }))));
     holder.replaceChildren(entry);
   };
   paint();
