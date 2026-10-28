@@ -6,7 +6,7 @@
 
 Every founder has ideas dying in a notes app. Bury yours with an epitaph, let others say *"I have this problem too"*, and watch builders revive it.
 
-**[Live site](LIVE_URL)** · [Run it locally](#run-it-locally) · [How it works](#how-it-works) · [API](#api)
+**[Live site: idea-graveyard-uoen.onrender.com](https://idea-graveyard-uoen.onrender.com)** · [Run it locally](#run-it-locally) · [How it works](#how-it-works) · [API](#api)
 
 [![CI](https://github.com/sakshar2303/idea-graveyard/actions/workflows/ci.yml/badge.svg)](https://github.com/sakshar2303/idea-graveyard/actions/workflows/ci.yml)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sakshar2303/idea-graveyard)
@@ -121,7 +121,7 @@ npm test
 
 ## Deploy
 
-Click **Deploy to Render** above and sign in with GitHub. The included `render.yaml` sets everything up. Paste an `ANTHROPIC_API_KEY` when asked if you want the coroner's report, or leave it blank.
+Live at **[https://idea-graveyard-uoen.onrender.com](https://idea-graveyard-uoen.onrender.com)**. To deploy your own copy, click **Deploy to Render** above and sign in with GitHub. The included `render.yaml` sets everything up. Paste an `ANTHROPIC_API_KEY` when asked if you want the coroner's report, or leave it blank.
 
 The free plan sleeps after 15 minutes without visitors (the first visit after that takes about 30 seconds) and has no persistent disk, so posts reset whenever it restarts. For a permanent site, switch `plan` to `starter` in `render.yaml` and uncomment the `disk` block.
 
