@@ -1,15 +1,18 @@
+# Render blueprint. The free plan sleeps when idle and has no persistent disk,
+# so posts reset on restart. For a permanent site, switch plan to starter and
+# uncomment the disk block below.
 services:
   - type: web
     name: idea-graveyard
     runtime: docker
-    plan: starter
+    plan: free
     healthCheckPath: /healthz
     envVars:
       - key: ADMIN_USERNAMES
         value: sakshar
       - key: ANTHROPIC_API_KEY
         sync: false
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
+    # disk:
+    #   name: data
+    #   mountPath: /data
+    #   sizeGB: 1
