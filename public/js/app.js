@@ -7,6 +7,7 @@ import { openAuth, openBury, openPalette, openSettings } from './dialogs.js';
 import { homeView } from './views/home.js';
 import { ideaView } from './views/idea.js';
 import { profileView, leaderboardView, adminView } from './views/people.js';
+import { startMotion } from './motion.js';
 
 const NOTE_COPY = {
   resurrected: 'started resurrecting',
@@ -75,10 +76,13 @@ function startLive() {
   if (!window.EventSource) return;
   const ticker = document.getElementById('ticker');
   const text = document.getElementById('tickerText');
+  let hideTimer;
   const show = (verb, d) => {
     text.replaceChildren(el('b', { text: d.by }), ` ${verb} `, el('a', { href: `/idea/${d.id}`, 'data-link': true }, el('b', { text: d.title })));
-    text.style.animation = 'none'; void text.offsetWidth; text.style.animation = '';
     ticker.hidden = false;
+    ticker.classList.remove('show'); void ticker.offsetWidth; ticker.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => ticker.classList.remove('show'), 7000);
     document.dispatchEvent(new CustomEvent('graveyard:live', { detail: d }));
   };
   const es = new EventSource('/api/events');
@@ -108,10 +112,8 @@ function notFound(main) {
 
 async function boot() {
   embers();
+  startMotion();
   document.getElementById('searchBtn').addEventListener('click', openPalette);
-  const onScroll = () => document.body.classList.toggle('scrolled', scrollY > 160);
-  addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
   try {
     const r = await api('/api/me');
     state.causes = r.causes;
