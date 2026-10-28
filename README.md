@@ -1,66 +1,113 @@
+<div align="center">
+
 # Idea Graveyard
 
-Every founder has ideas dying in a notes app. **Idea Graveyard** is where you bury them with an epitaph and a cause of death, where other people say "I have this problem too", and where builders **resurrect** them and ship them. Dead ideas become a public pool of validated problems.
+**Obituaries for startup ideas, and the people who bring them back.**
 
-Built by Sakshar Dhawan.
+Every founder has ideas dying in a notes app. Bury yours with an epitaph, let others say *"I have this problem too"*, and watch builders revive it.
+
+**[Live site](LIVE_URL)** · [Run it locally](#run-it-locally) · [How it works](#how-it-works) · [API](#api)
+
+[![CI](https://github.com/sakshar2303/idea-graveyard/actions/workflows/ci.yml/badge.svg)](https://github.com/sakshar2303/idea-graveyard/actions/workflows/ci.yml)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sakshar2303/idea-graveyard)
+
+![Idea Graveyard front page](docs/screenshots/front-page.png)
+
+</div>
+
+## Why
+
+Most founders don't fail because they can't build. They fail because they build something nobody wants, and the ideas that *were* wanted get abandoned in a notes app.
+
+Idea Graveyard turns those dead ideas into a public pool of problems people have already felt. Every "me too" is a validation signal, so the next builder can see which problems are worth reviving before they write a line of code.
+
+## How it works
+
+1. **Bury it.** Write the idea's obituary: the problem it solved, who had it, how it died and its last words.
+2. **Let people feel it.** Readers light a candle or tap **Me too**, which counts as real validation for the problem.
+3. **Raise it.** A builder revives the idea, posts progress through *Planning → Building → Launched*, and the obituary turns green.
+
+## Tour
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/obituaries.png" alt="Obituary columns"><br><sub><b>The obituaries.</b> Ruled newspaper columns. Every idea gets its own generative ink engraving.</sub></td>
+    <td width="50%"><img src="docs/screenshots/obituary-page.png" alt="An obituary page"><br><sub><b>An obituary.</b> The deceased, the coroner's report (AI), revival efforts and condolences.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/second-lives.png" alt="Second lives band"><br><sub><b>Second lives.</b> Revived ideas and how far each one has got.</sub></td>
+    <td width="50%"><img src="docs/screenshots/write-yours.png" alt="Write yours band"><br><sub><b>Write yours.</b> Type a dead idea and watch its obituary set as you type.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/hall-of-fame.png" alt="Hall of fame"><br><sub><b>Hall of fame.</b> Top revivers, most wanted problems and the leading causes of death.</sub></td>
+    <td width="50%" align="center"><img src="docs/screenshots/mobile.png" alt="Mobile layout" width="260"><br><sub><b>On a phone.</b> Fully responsive.</sub></td>
+  </tr>
+</table>
 
 ## Features
 
-**For founders**
-- Bury an idea in a three-step flow with a live tombstone preview: the problem, who had it, cause of death, story, tags and an epitaph
-- Drafts autosave, so an unfinished burial is never lost
-- Shareable tombstones: one-click LinkedIn share, copy caption, and a downloadable 1080×1350 tombstone image
+**Founders**
+- A three-step obituary editor with a live press-clipping preview and autosaved drafts
+- Share to LinkedIn, copy a caption, or download a 1080×1350 newspaper clipping of the obituary
 - Link previews (LinkedIn, WhatsApp) show the idea's name and epitaph
 
-**For the community**
-- 🕯 Light a candle (pay respects) and ✋ "I have this problem too" (a real validation signal)
-- Eulogies (comments) on every grave
-- Notifications when someone resurrects your idea, has your problem, leaves a eulogy or launches it
+**Readers**
+- Light a candle, say **Me too**, and leave condolences on any obituary
+- Notifications when someone revives your idea, shares your problem, leaves a condolence or launches it
+- A live wire of the latest last words, plus real-time alerts for new obituaries and revivals
 
-**For builders**
-- Resurrect an idea with a plan and a project link, then post progress updates through Planning, Building and Launched
-- A public timeline for every resurrection; launched ideas turn gold with "IT LIVES"
-- **AI autopsy** (Claude): why the idea really died, survival odds, a resurrection plan, a 48-hour MVP and the validation questions to ask real users
+**Builders**
+- Revive an idea with a plan and a project link, then post progress updates to a public timeline
+- **The coroner's report:** Claude explains why the idea really died, gives its odds in a second life, a revival plan, a 48-hour MVP and the questions to ask real users first
 
 **Discovery**
-- Trending, fresh, most wanted, most mourned, risen and oldest sorts; filters by status, cause of death and tag
-- Search palette (`/` or `⌘K`) across ideas, problems and founders
-- Hall of fame: top revivers, most prolific founders, most wanted problems, most mourned ideas and the leading causes of death
-- Live ticker over server-sent events: see burials, resurrections and launches as they happen
+- Sort by latest, trending, most wanted or revivals, and filter by cause of death or tag
+- Search everything with `/` or `⌘K`
+- Hall of fame leaderboards and a leading-causes-of-death chart
 
-**Accounts and safety**
-- Username and password accounts (scrypt hashing, HttpOnly session cookies)
-- Profiles with stats, a bio and tabs for buried and resurrecting ideas
-- Reporting plus an admin moderation queue (hide, restore, dismiss)
+**Accounts and moderation**
+- Username and password accounts, profiles with bios and stats
+- Reporting plus a moderation queue for admins (hide, restore, dismiss)
+
+## Design
+
+An editorial newspaper system rather than a dashboard: newsprint paper, black ink, one red for deaths and one green for revivals. Headlines are set in Instrument Serif, body text in Inter, labels in IBM Plex Mono, all on a ruled column grid. Each idea's engraving (halftone, rings, etching or sunburst) is generated from its id, so the same idea always gets the same plate. Motion is quiet: content fades up as you scroll, headlines underline as they draw in, and lit candles flicker. Reduced-motion settings are respected.
 
 ## Stack
 
-- **Backend:** Node.js 22.13+ with the built-in `node:sqlite` (SQLite in WAL mode). No web framework.
-- **Frontend:** vanilla ES modules and a hand-written editorial design system (Instrument Serif, Inter, IBM Plex Mono). No build step.
-- **AI:** Claude Opus 5.5 through the official Anthropic SDK with structured JSON output.
-- **Ops:** Dockerfile, Render blueprint with a persistent disk, GitHub Actions CI.
+| Layer | Choice |
+| --- | --- |
+| Server | Node.js 22.13+ with no web framework |
+| Database | SQLite through the built-in `node:sqlite` (WAL mode) |
+| Frontend | Vanilla ES modules and hand-written CSS, no build step |
+| AI | Claude Opus 5.5 through the Anthropic SDK, with schema-validated JSON output |
+| Ops | Dockerfile, Render blueprint, GitHub Actions CI |
 
 ```
 server.js          HTTP server, routes, security headers, live events
-lib/db.js          SQLite schema and demo seed data
+lib/db.js          SQLite schema and demo data
 lib/auth.js        password hashing and sessions
-lib/autopsy.js     AI autopsy via Claude
-public/index.html  app shell
-public/css/        design system
-public/js/         router, views, dialogs and components
+lib/autopsy.js     the coroner's report via Claude
+public/index.html  app shell and masthead
+public/css/        editorial design system
+public/js/         router, views, dialogs, engravings and motion
 test/              API test suite (node:test)
 ```
 
-## Run locally
+## Run it locally
+
+Requires Node.js 22.13 or later.
 
 ```bash
+git clone https://github.com/sakshar2303/idea-graveyard.git
+cd idea-graveyard
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The first run creates `data/graveyard.db` with demo ideas. Demo users cannot sign in, so create your own account.
+Open http://localhost:3000. The first run creates `data/graveyard.db` with demo obituaries. The demo founders cannot sign in, so create your own account. Sign up as `sakshar`, or any name listed in `ADMIN_USERNAMES`, to get moderation access.
 
-To enable the AI autopsy, set an Anthropic API key:
+To turn on the coroner's report, add an Anthropic API key:
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-... npm run dev
@@ -72,6 +119,12 @@ Run the tests:
 npm test
 ```
 
+## Deploy
+
+Click **Deploy to Render** above and sign in with GitHub. The included `render.yaml` sets everything up. Paste an `ANTHROPIC_API_KEY` when asked if you want the coroner's report, or leave it blank.
+
+The free plan sleeps after 15 minutes without visitors (the first visit after that takes about 30 seconds) and has no persistent disk, so posts reset whenever it restarts. For a permanent site, switch `plan` to `starter` in `render.yaml` and uncomment the `disk` block.
+
 ## Configuration
 
 See [.env.example](.env.example).
@@ -81,8 +134,8 @@ See [.env.example](.env.example).
 | `PORT` | `3000` | Port to listen on |
 | `DATA_DIR` | `./data` | Folder for the SQLite database; use a persistent disk in production |
 | `ADMIN_USERNAMES` | unset | Comma-separated usernames with moderation access |
-| `ANTHROPIC_API_KEY` | unset | Turns on the AI autopsy |
-| `SEED` | `1` | Set to `0` to start with an empty graveyard |
+| `ANTHROPIC_API_KEY` | unset | Turns on the coroner's report |
+| `SEED` | `1` | Set to `0` to start with no demo obituaries |
 | `TRUST_PROXY` | unset | Set to `1` behind a reverse proxy so rate limits see real client IPs |
 | `COOKIE_SECURE` | auto | Secure cookies; on automatically when `NODE_ENV=production` |
 
@@ -96,13 +149,13 @@ All write requests need `Content-Type: application/json`. Routes marked 🔒 nee
 | `POST` | `/api/auth/signup` · `/login` · `/logout` | Accounts |
 | `PATCH` | `/api/me` 🔒 | Display name and bio |
 | `GET` | `/api/ideas` | `sort`, `status`, `cause`, `tag`, `q`, `user`, `offset` |
-| `POST` | `/api/ideas` 🔒 | Bury an idea |
-| `GET` / `DELETE` | `/api/ideas/:id` | Detail with crew, eulogies and autopsy; delete (founder or admin) |
+| `POST` | `/api/ideas` 🔒 | Publish an obituary |
+| `GET` / `DELETE` | `/api/ideas/:id` | Full obituary; delete (founder or admin) |
 | `POST` | `/api/ideas/:id/candle` · `/same` 🔒 | Toggle a candle or a "me too" |
-| `POST` | `/api/ideas/:id/resurrect` 🔒 | `{pitch, link}` |
-| `PATCH` / `DELETE` | `/api/resurrections/:id` 🔒 | `{status, note, link}`, or abandon |
-| `POST` | `/api/ideas/:id/eulogies` 🔒 | `{body}`; `DELETE /api/eulogies/:id` |
-| `POST` | `/api/ideas/:id/autopsy` 🔒 | Runs once per idea, then cached |
+| `POST` | `/api/ideas/:id/resurrect` 🔒 | Start a revival: `{pitch, link}` |
+| `PATCH` / `DELETE` | `/api/resurrections/:id` 🔒 | Post progress `{status, note, link}`, or abandon |
+| `POST` | `/api/ideas/:id/eulogies` 🔒 | Leave a condolence `{body}`; `DELETE /api/eulogies/:id` |
+| `POST` | `/api/ideas/:id/autopsy` 🔒 | The coroner's report; runs once per idea, then cached |
 | `POST` | `/api/ideas/:id/report` 🔒 | `{reason}` |
 | `GET` | `/api/notifications` 🔒 | Plus `POST /api/notifications/read` |
 | `GET` | `/api/users/:username` · `/api/leaderboard` · `/api/stats` | Public |
@@ -111,17 +164,13 @@ All write requests need `Content-Type: application/json`. Routes marked 🔒 nee
 
 ## Security
 
-- Strict Content Security Policy (no inline scripts or styles), HSTS, `nosniff`, no framing
-- CSRF protection: JSON-only writes plus an Origin check, with `SameSite=Lax` HttpOnly cookies
-- scrypt password hashes, constant-time comparisons, and equal timing for unknown usernames
-- Per-IP and per-user rate limits, body size limits, a honeypot field, and caps on AI usage
-- User text is only ever rendered as text, never as HTML; link-preview tags are escaped
-- AI input is wrapped as data, and the AI's output is schema-validated and clamped
-
-## Deploy
-
-`render.yaml` deploys the Docker image on [Render](https://render.com) with a 1 GB disk at `/data`. Set `ANTHROPIC_API_KEY` in the dashboard to switch on autopsies. SQLite on one instance comfortably handles thousands of users. To scale out, move to Postgres.
+- Strict Content Security Policy with no inline scripts or styles, plus HSTS, `nosniff` and no framing
+- CSRF protection: JSON-only writes and an Origin check, with `SameSite=Lax` HttpOnly session cookies
+- scrypt password hashes, constant-time comparisons and equal timing for unknown usernames
+- Per-IP and per-user rate limits, body size limits, a honeypot field and caps on AI usage
+- User text is only ever rendered as text, never as HTML, and link-preview tags are escaped
+- AI input is wrapped as data, and AI output is schema-validated and clamped
 
 ## License
 
-MIT
+MIT · Designed and built by **Sakshar Dhawan**
