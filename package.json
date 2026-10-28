@@ -1,0 +1,14 @@
+{
+  "name": "idea-graveyard",
+  "version": "1.0.0",
+  "description": "Bury abandoned ideas with an epitaph. Resurrect someone else's and build it.",
+  "author": "Sakshar Dhawan",
+  "license": "MIT",
+  "private": true,
+  "main": "server.js",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js"
+  }
+}
