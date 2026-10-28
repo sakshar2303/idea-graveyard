@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Idea Graveyard</title>
+<meta name="author" content="Sakshar Dhawan">
+<meta name="description" content="Bury your abandoned ideas with an epitaph. Resurrect someone else's and build it.">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Idea Graveyard</h1>
+    <p class="sub">Every founder has ideas dying in a notes app. Bury yours with an epitaph. Or resurrect someone else's and build it.</p>
+    <div class="stats" id="stats"></div>
+    <button class="primary" id="buryBtn">Bury an idea</button>
+  </header>
+
+  <div class="bar">
+    <div class="chips" id="chips" role="group" aria-label="Filter by cause of death"></div>
+    <select id="sort" aria-label="Sort ideas">
+      <option value="new">Newest burials</option>
+      <option value="hot">Most resurrected</option>
+      <option value="old">Oldest</option>
+    </select>
+  </div>
+
+  <main class="grid" id="grid" aria-live="polite"></main>
+  <footer class="foot">Built by <b>Sakshar Dhawan</b> · Idea Graveyard</footer>
+</div>
+
+<dialog id="buryDlg">
+  <form method="dialog" id="buryForm">
+    <h2>Bury an idea</h2>
+    <p class="hint">Let it rest. Someone might pick it up.</p>
+    <label for="bTitle">The idea</label>
+    <input id="bTitle" maxlength="80" placeholder="e.g. Uber for tiffin boxes" required>
+    <label for="bEpitaph">Epitaph <span class="count" id="epCount">0/140</span></label>
+    <input id="bEpitaph" maxlength="140" placeholder="Short and a little sad" required>
+    <label for="bCause">Cause of death</label>
+    <select id="bCause" class="full"></select>
+    <label for="bWhy">The problem it solved (optional)</label>
+    <textarea id="bWhy" maxlength="300" placeholder="Who hurt, and why? This is what a builder needs."></textarea>
+    <label for="bAuthor">Your name (optional)</label>
+    <input id="bAuthor" maxlength="30" placeholder="Anonymous">
+    <input class="hp" name="website" id="bWebsite" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="err" id="bErr" role="alert"></div>
+    <div class="row"><button type="button" id="bCancel">Cancel</button><button class="primary" type="submit">Bury it</button></div>
+  </form>
+</dialog>
+
+<dialog id="resDlg">
+  <form method="dialog" id="resForm">
+    <h2>Resurrect this idea</h2>
+    <p class="hint" id="resTitle"></p>
+    <label for="rName">Your name</label>
+    <input id="rName" maxlength="30" required>
+    <label for="rContact">LinkedIn or email (optional, not shown publicly)</label>
+    <input id="rContact" maxlength="80">
+    <div class="err" id="rErr" role="alert"></div>
+    <div class="row"><button type="button" id="rCancel">Cancel</button><button class="primary" type="submit">I'll build it</button></div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="/app.js" defer></script>
+</body>
+</html>
