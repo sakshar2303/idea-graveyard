@@ -72,9 +72,10 @@ export function openAuth(reason, mode = 'login') {
 setAuthPrompt(openAuth);
 
 // ---------- bury ----------
-export async function openBury() {
+export async function openBury(prefill = {}) {
   const draft = { title: '', epitaph: '', cause: state.causes[0] || 'No time', problem: '', audience: '', story: '', tags: '' };
   try { Object.assign(draft, JSON.parse(localStorage.getItem('ig-draft') || '{}')); } catch {}
+  for (const [k, v] of Object.entries(prefill)) if (v) draft[k] = v;
   const saveDraft = () => { try { localStorage.setItem('ig-draft', JSON.stringify(draft)); } catch {} };
   let step = 0;
 

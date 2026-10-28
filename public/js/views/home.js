@@ -6,6 +6,7 @@ import { setQuery } from '../router.js';
 import { graveCard, skeletonGrid, emptyState, kicker, actionBar, survivedBy, statusPill } from '../components.js';
 import { openBury } from '../dialogs.js';
 import { reveal, countWhenVisible } from '../motion.js';
+import { engraving } from '../engraving.js';
 
 const SORTS = [['new', 'Latest'], ['trending', 'Trending'], ['wanted', 'Most wanted'], ['risen', 'Revivals']];
 
@@ -19,14 +20,11 @@ export async function homeView(main, ctx) {
   const lead = el('article', { class: 'lead' }, el('div', { class: 'lead-skeleton' }));
   const stats = {};
   const stat = (k, label) => el('li', {}, stats[k] = el('b', { text: '0' }), el('span', { text: label }));
-  const revivedList = el('ol', { class: 'rail-list' });
+  const causes = el('ol', { class: 'cause-chart' });
   const rail = el('aside', { class: 'rail' },
     el('section', { class: 'rail-box' }, el('h2', { class: 'label', text: 'In this edition' }),
       el('ul', { class: 'figures' }, stat('buried', 'ideas buried'), stat('validations', 'people said “me too”'), stat('risen', 'ideas being revived'), stat('launched', 'brought back to life'))),
-    el('section', { class: 'rail-box' }, el('h2', { class: 'label', text: 'Back from the dead' }), revivedList),
-    el('section', { class: 'rail-box invite' },
-      el('p', { text: 'Got an idea dying in your notes app? Give it a proper send-off. Someone might bring it back.' }),
-      el('button', { class: 'btn btn-primary', onclick: write, text: 'Write an obituary' })));
+    el('section', { class: 'rail-box' }, el('h2', { class: 'label', text: 'Leading causes of death' }), causes));
 
   const front = el('section', { class: 'front' }, lead, rail);
 
@@ -46,23 +44,39 @@ export async function homeView(main, ctx) {
     el('div', { class: 'section-bar' }, el('h2', { class: 'section-title', text: 'Obituaries' }), el('div', { class: 'section-controls' }, tabs, causeSel)),
     note, grid, more);
 
-  main.replaceChildren(el('div', { class: 'page' }, front, wall));
+  const lives = el('div', { class: 'lives' });
+  const livesBand = el('section', { class: 'band band-dark', hidden: true },
+    el('div', { class: 'band-inner' },
+      el('div', { class: 'band-head' }, el('span', { class: 'label', text: 'Second lives' }), el('h2', { text: 'Back from the dead' }),
+        el('p', { text: 'Ideas someone dug up and is building again. Follow along, or join the revival.' })),
+      lives));
+
+  main.replaceChildren(el('div', { class: 'page' }, front, livesBand, wall, writeBand(write)));
   paintTabs();
   reveal([lead, ...rail.children]);
 
   // stats, the lead story and the revival list load independently
   api('/api/stats').then(s => Object.entries(stats).forEach(([k, n]) => countWhenVisible(n, s[k] ?? 0))).catch(() => {});
   api('/api/ideas?sort=wanted').then(r => paintLead(r.ideas[0])).catch(() => lead.replaceChildren());
+  api('/api/leaderboard').then(lb => {
+    const top = lb.causes.filter(c => c.count).slice(0, 4);
+    const max = Math.max(1, ...top.map(c => c.count));
+    causes.replaceChildren(...top.map(c => el('li', {},
+      el('div', { class: 'cause-row' }, el('span', { text: c.cause }), el('b', { text: c.count })),
+      el('i', { class: 'cause-bar', vars: { '--w': (c.count / max).toFixed(3) } }))));
+  }).catch(() => {});
   api('/api/ideas?sort=risen').then(r => {
-    const risen = r.ideas.filter(i => i.status !== 'dead').slice(0, 4);
-    revivedList.replaceChildren(...(risen.length ? risen.map(i => el('li', {},
-      el('a', { href: `/idea/${i.id}`, 'data-link': true, text: i.title }), statusPill(i.status))) :
-      [el('li', { class: 'muted', text: 'Nothing has risen yet. Be the first to revive an idea.' })]));
+    const risen = r.ideas.filter(i => i.status !== 'dead').slice(0, 3);
+    if (!risen.length) return;
+    lives.replaceChildren(...risen.map(lifeCard));
+    livesBand.hidden = false;
+    reveal([...lives.children]);
   }).catch(() => {});
 
   function paintLead(idea) {
     if (!idea) { lead.replaceChildren(emptyState('No obituaries yet', 'The first one is yours to write.')); return; }
     lead.replaceChildren(
+      el('div', { class: 'lead-plate' }, engraving(idea.id, idea.title, { size: 200 }), el('span', { class: 'lead-caption', text: 'Fig. 1 · In memoriam' })),
       el('div', { class: 'lead-flag', text: 'Most wanted this week' }),
       kicker(idea),
       el('h1', { class: 'lead-title' }, el('a', { href: `/idea/${idea.id}`, 'data-link': true, text: idea.title })),
@@ -112,4 +126,50 @@ export async function homeView(main, ctx) {
   load();
   if (ctx.query.get('sort') || ctx.query.get('tag') || ctx.query.get('q')) requestAnimationFrame(() => wall.scrollIntoView());
   if (ctx.query.get('welcome')) toast('Welcome to the graveyard.');
+}
+
+const STAGES = [['planning', 'Planning'], ['building', 'Building'], ['launched', 'Launched']];
+
+function lifeCard(idea) {
+  const at = STAGES.findIndex(([v]) => v === idea.status);
+  return el('a', { class: 'life', href: `/idea/${idea.id}`, 'data-link': true },
+    el('div', { class: 'life-plate' }, engraving(idea.id, idea.title, { size: 76, label: false })),
+    el('div', { class: 'life-body' },
+      statusPill(idea.status),
+      el('h3', { text: idea.title }),
+      el('p', { class: 'life-epitaph', text: `Once: “${idea.epitaph}”` }),
+      el('ol', { class: 'stages', 'aria-label': `Stage: ${STAGES[at]?.[1]}` },
+        STAGES.map(([, label], i) => el('li', { class: i <= at ? 'done' : '', text: label })))));
+}
+
+// type a dead idea's name and last words, watch its headline set, then publish it
+function writeBand(write) {
+  const title = el('input', { class: 'band-input', maxlength: 80, placeholder: 'Uber for tiffin boxes', 'aria-label': 'Name of your dead idea' });
+  const epitaph = el('input', { class: 'band-input', maxlength: 140, placeholder: 'Delivered nothing, ever.', 'aria-label': 'Its last words' });
+  const hTitle = el('h3', { class: 'proof-title', text: 'Your idea, here' });
+  const hEpitaph = el('p', { class: 'proof-epitaph', text: '“Its last words, here.”' });
+  const sync = () => {
+    hTitle.textContent = title.value.trim() || 'Your idea, here';
+    hEpitaph.textContent = `“${epitaph.value.trim() || 'Its last words, here.'}”`;
+    hTitle.classList.toggle('set', !!title.value.trim());
+  };
+  title.addEventListener('input', sync);
+  epitaph.addEventListener('input', sync);
+  const go = async e => {
+    e.preventDefault();
+    if (!(await requireAuth('Create an account to publish the obituary.'))) return;
+    openBury({ title: title.value.trim(), epitaph: epitaph.value.trim() });
+  };
+  return el('section', { class: 'band band-ink' }, el('div', { class: 'band-inner write' },
+    el('div', { class: 'band-head' }, el('span', { class: 'label', text: 'Write yours' }),
+      el('h2', { text: 'Every founder has one.' }),
+      el('p', { text: 'The idea you were sure about at 2am. The one with a domain name and nothing else. Give it a proper send-off.' }),
+      el('form', { class: 'band-form', onsubmit: go },
+        el('label', {}, el('span', { text: 'The idea' }), title),
+        el('label', {}, el('span', { text: 'Its last words' }), epitaph),
+        el('button', { class: 'btn btn-paper btn-lg', type: 'submit' }, 'Publish its obituary', el('span', { class: 'arrow', text: '→' })))),
+    el('div', { class: 'proof', 'aria-hidden': 'true' },
+      el('div', { class: 'proof-head' }, el('span', { text: 'Idea Graveyard' }), el('span', { text: 'Obituaries' })),
+      el('div', { class: 'proof-kicker', text: 'Cause of death · to be confirmed' }), hTitle, hEpitaph,
+      el('p', { class: 'proof-meta', text: `Buried ${fmtDate(Date.now())}` }))));
 }

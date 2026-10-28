@@ -77,18 +77,38 @@ function startLive() {
   const ticker = document.getElementById('ticker');
   const text = document.getElementById('tickerText');
   let hideTimer;
-  const show = (verb, d) => {
+  const show = (verb, d, kind) => {
     text.replaceChildren(el('b', { text: d.by }), ` ${verb} `, el('a', { href: `/idea/${d.id}`, 'data-link': true }, el('b', { text: d.title })));
     ticker.hidden = false;
     ticker.classList.remove('show'); void ticker.offsetWidth; ticker.classList.add('show');
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => ticker.classList.remove('show'), 7000);
-    document.dispatchEvent(new CustomEvent('graveyard:live', { detail: d }));
+    document.dispatchEvent(new CustomEvent('graveyard:live', { detail: { ...d, kind } }));
   };
   const es = new EventSource('/api/events');
-  es.addEventListener('buried', e => show('published an obituary for', JSON.parse(e.data)));
-  es.addEventListener('resurrected', e => show('started reviving', JSON.parse(e.data)));
-  es.addEventListener('launched', e => show('relaunched', JSON.parse(e.data)));
+  es.addEventListener('buried', e => show('published an obituary for', JSON.parse(e.data), 'buried'));
+  es.addEventListener('resurrected', e => show('started reviving', JSON.parse(e.data), 'resurrected'));
+  es.addEventListener('launched', e => show('relaunched', JSON.parse(e.data), 'launched'));
+}
+
+// the news wire: a slow, endless strip of the latest epitaphs
+async function startWire() {
+  const wire = document.getElementById('wire');
+  const track = document.getElementById('wireTrack');
+  if (!wire) return;
+  const paint = async () => {
+    const r = await api('/api/ideas?sort=new').catch(() => null);
+    const items = r?.ideas.slice(0, 12) || [];
+    if (!items.length) return;
+    const row = () => items.map(i => el('a', { class: 'wire-item', href: `/idea/${i.id}`, 'data-link': true },
+      el('em', { text: `“${i.epitaph}”` }), el('span', { text: i.title })));
+    // two copies so the loop is seamless; the second is hidden from screen readers
+    track.replaceChildren(el('div', { class: 'wire-run' }, row()), el('div', { class: 'wire-run', 'aria-hidden': 'true' }, row()));
+    track.style.setProperty('--wire-s', `${Math.max(40, items.length * 7)}s`);
+    wire.hidden = false;
+  };
+  await paint();
+  document.addEventListener('graveyard:live', e => { if (e.detail?.kind === 'buried') paint(); });
 }
 
 function shortcuts() {
@@ -130,6 +150,7 @@ async function boot() {
   route('/admin', adminView);
   startRouter(notFound);
   startLive();
+  startWire();
   shortcuts();
 }
 
