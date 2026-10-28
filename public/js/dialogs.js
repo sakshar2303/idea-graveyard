@@ -33,20 +33,20 @@ export function openAuth(reason, mode = 'login') {
       const paint = () => {
         const isLogin = mode === 'login';
         const username = el('input', { class: 'input', name: 'username', autocomplete: 'username', required: true, maxlength: 20, autofocus: true, placeholder: 'e.g. sakshar' });
-        const display = el('input', { class: 'input', name: 'displayName', autocomplete: 'name', maxlength: 40, placeholder: 'How your name shows on graves' });
+        const display = el('input', { class: 'input', name: 'displayName', autocomplete: 'name', maxlength: 40, placeholder: 'Shown on your obituaries' });
         const password = el('input', { class: 'input', name: 'password', type: 'password', autocomplete: isLogin ? 'current-password' : 'new-password', required: true, minlength: isLogin ? 1 : 8 });
         const err = el('p', { class: 'err', role: 'alert' });
-        const submit = el('button', { class: 'btn btn-soul btn-lg', type: 'submit', text: isLogin ? 'Enter the graveyard' : 'Dig my plot' });
+        const submit = el('button', { class: 'btn btn-soul btn-lg', type: 'submit', text: isLogin ? 'Sign in' : 'Create account' });
         const form = el('form', {
           onsubmit: async e => {
             e.preventDefault();
             err.textContent = '';
-            busy(submit, true, isLogin ? 'Opening the gates…' : 'Digging…');
+            busy(submit, true, isLogin ? 'Signing in…' : 'Creating…');
             try {
               const r = await post(`/api/auth/${isLogin ? 'login' : 'signup'}`, { username: username.value, password: password.value, displayName: display.value });
               setMe(r.user);
               done = true;
-              toast(isLogin ? `Welcome back, ${r.user.displayName}.` : `Welcome, ${r.user.displayName}. Your plot is ready.`, 'soul');
+              toast(isLogin ? `Welcome back, ${r.user.displayName}.` : `Welcome, ${r.user.displayName}.`, 'soul');
               resolve(true);
               close();
             } catch (ex) { err.textContent = ex.message; busy(submit, false); }
@@ -64,7 +64,7 @@ export function openAuth(reason, mode = 'login') {
         username.focus();
       };
       paint();
-      return [dialogHead(mode === 'login' ? 'Welcome to the graveyard' : 'Join the graveyard', close), body];
+      return [dialogHead('Your account', close), body];
     }, { label: 'Sign in' });
     dlg.addEventListener('close', () => { if (!done) resolve(false); });
   });
@@ -85,7 +85,7 @@ export async function openBury() {
       const { wrap } = stoneFace({
         id: 'preview', title: draft.title || 'Your idea', epitaph: draft.epitaph || 'Its last words…', cause: draft.cause,
         tags: draft.tags.split(',').map(t => t.trim().toLowerCase()).filter(Boolean).slice(0, 5), buriedAt: Date.now(), status: 'dead',
-      }, { big: true });
+      });
       preview.replaceChildren(el('div', { class: 'preview-label', text: 'Live preview' }), wrap);
     };
     const bind = (input, key) => {
@@ -100,9 +100,9 @@ export async function openBury() {
       let content, next;
       if (step === 0) {
         const title = bind(el('input', { class: 'input', maxlength: 80, placeholder: 'e.g. Uber for tiffin boxes', autofocus: true }), 'title');
-        const problem = bind(el('textarea', { class: 'textarea', maxlength: 400, placeholder: 'Who hurt, and why? This is what a future builder needs most.' }), 'problem');
+        const problem = bind(el('textarea', { class: 'textarea', maxlength: 400, placeholder: 'Who had this problem, and why did it hurt? A future builder needs this most.' }), 'problem');
         const audience = bind(el('input', { class: 'input', maxlength: 120, placeholder: 'e.g. Office workers in Bengaluru' }), 'audience');
-        content = [field('What was the idea?', title, counter(title, 80)), field('The problem it solved', problem, 'optional but gold'), field('Who had this problem?', audience, 'optional')];
+        content = [field('Name of the idea', title, counter(title, 80)), field('The problem it solved', problem, 'optional'), field('Who had this problem', audience, 'optional')];
         next = () => { if (draft.title.trim().length < 3) { err.textContent = 'Give your idea a name (at least 3 characters).'; return false; } return true; };
       } else if (step === 1) {
         const causes = el('div', { class: 'cause-pick', role: 'radiogroup', 'aria-label': 'Cause of death' },
@@ -113,27 +113,27 @@ export async function openBury() {
         content = [el('div', { class: 'field' }, el('span', { class: 'label', text: 'Cause of death' }), causes), field('The story', story, 'optional'), field('Tags', tags, 'up to 5, comma separated')];
         next = () => true;
       } else {
-        const epitaph = bind(el('input', { class: 'input', maxlength: 140, placeholder: 'Short, a little sad, ideally funny', autofocus: true }), 'epitaph');
+        const epitaph = bind(el('input', { class: 'input', maxlength: 140, placeholder: 'One line. A little sad, ideally funny.', autofocus: true }), 'epitaph');
         const ideas = ['Gone but not forgotten. Mostly forgotten.', 'It had potential. So did I.', 'Died as it lived: in a Google Doc.', 'Pivoted into the afterlife.'];
-        content = [field('Its epitaph', epitaph, counter(epitaph, 140)),
+        content = [field('Epitaph', epitaph, counter(epitaph, 140)),
           el('div', { class: 'chips' }, ideas.map(t => el('button', { type: 'button', class: 'chip', text: t, onclick: () => { draft.epitaph = t; epitaph.value = t; saveDraft(); paintPreview(); } }))),
           el('input', { class: 'hp', name: 'website', tabindex: '-1', autocomplete: 'off', 'aria-hidden': 'true', id: 'bury-hp' })];
         next = () => { if (draft.epitaph.trim().length < 3) { err.textContent = 'Every grave needs an epitaph.'; return false; } return true; };
       }
 
-      const primary = el('button', { class: `btn ${step === 2 ? 'btn-primary' : 'btn-soul'}`, type: 'submit' }, step === 2 ? [icon('shovel'), 'Bury it'] : ['Continue', icon('arrow')]);
+      const primary = el('button', { class: `btn ${step === 2 ? 'btn-primary' : 'btn-soul'}`, type: 'submit' }, step === 2 ? 'Publish obituary' : 'Continue');
       const form = el('form', {
         onsubmit: async e => {
           e.preventDefault();
           if (!next()) return;
           if (step < 2) { step++; return paint(); }
-          busy(primary, true, 'Lowering the casket…');
+          busy(primary, true, 'Publishing…');
           try {
             const idea = await post('/api/ideas', { ...draft, website: form.querySelector('#bury-hp')?.value });
             try { localStorage.removeItem('ig-draft'); } catch {}
             close();
             moment('bury', 'R.I.P.');
-            toast('Laid to rest. Share it so someone can resurrect it.', 'soul');
+            toast('Published. Share it so someone can revive it.');
             if (idea.id) navigate(`/idea/${idea.id}`);
           } catch (ex) { err.textContent = ex.message; busy(primary, false); }
         },
@@ -141,44 +141,44 @@ export async function openBury() {
         el('div', { class: 'dlg-foot' },
           step > 0 ? el('button', { class: 'btn btn-ghost', type: 'button', text: 'Back', onclick: () => { step--; paint(); } }) : null,
           el('span', { class: 'spacer' }), primary));
-      body.replaceChildren(el('div', { class: 'bury-layout' }, el('div', {}, el('p', { class: 'dlg-sub', text: ['Every idea deserves a proper burial.', 'How did it die?', 'Last words.'][step] }), form), preview));
+      body.replaceChildren(el('div', { class: 'bury-layout' }, el('div', {}, el('p', { class: 'dlg-sub', text: ['Step 1 of 3 · The deceased', 'Step 2 of 3 · How it died', 'Step 3 of 3 · Last words'][step] }), form), preview));
       form.querySelector('[autofocus], input, textarea')?.focus();
     };
     paint();
     paintPreview();
-    return [dialogHead('Bury an idea', close), body];
-  }, { wide: true, label: 'Bury an idea' });
+    return [dialogHead('Write an obituary', close), body];
+  }, { wide: true, label: 'Write an obituary' });
 }
 
 // ---------- resurrect ----------
 export function openResurrect(idea, onDone) {
   openDialog(close => {
-    const pitch = el('textarea', { class: 'textarea', maxlength: 400, autofocus: true, placeholder: 'How will you bring it back? What will you do differently?' });
+    const pitch = el('textarea', { class: 'textarea', maxlength: 400, autofocus: true, placeholder: 'How will you bring it back? What will you do differently this time?' });
     const link = el('input', { class: 'input', type: 'url', maxlength: 300, placeholder: 'https://… (repo, landing page, Figma)' });
     const err = el('p', { class: 'err', role: 'alert' });
-    const submit = el('button', { class: 'btn btn-soul btn-lg', type: 'submit' }, icon('res'), 'Raise it from the dead');
-    return [dialogHead('Resurrect this idea', close), el('div', { class: 'dlg-body' },
-      el('p', { class: 'dlg-sub' }, 'You are about to bring ', el('b', { text: idea.title }), ' back to life. The founder gets notified.'),
+    const submit = el('button', { class: 'btn btn-primary btn-lg', type: 'submit', text: 'Start the revival' });
+    return [dialogHead('Revive this idea', close), el('div', { class: 'dlg-body' },
+      el('p', { class: 'dlg-sub' }, 'You are bringing ', el('b', { text: idea.title }), ' back to life. The founder will be notified.'),
       el('form', {
         onsubmit: async e => {
           e.preventDefault();
-          busy(submit, true, 'Summoning…');
+          busy(submit, true, 'Starting…');
           try {
             const updated = await post(`/api/ideas/${idea.id}/resurrect`, { pitch: pitch.value, link: link.value });
             close();
             moment('rise', 'IT LIVES');
-            toast('Resurrection started. Post updates as you build.', 'soul');
+            toast('Revival started. Post updates as you build.', 'soul');
             onDone?.(updated);
           } catch (ex) { err.textContent = ex.message; busy(submit, false); }
         },
       }, field('Your plan', pitch, counter(pitch, 400)), field('Link', link, 'optional'), err, el('div', { class: 'dlg-foot' }, submit)))];
-  }, { label: 'Resurrect' });
+  }, { label: 'Revive' });
 }
 
 // ---------- search palette ----------
 export function openPalette() {
   openDialog(close => {
-    const input = el('input', { class: 'input', type: 'search', placeholder: 'Search ideas, problems, founders…', 'aria-label': 'Search', autofocus: true, role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-res' });
+    const input = el('input', { class: 'input', type: 'search', placeholder: 'Search obituaries, problems, founders', 'aria-label': 'Search', autofocus: true, role: 'combobox', 'aria-expanded': 'true', 'aria-controls': 'pal-res' });
     const list = el('div', { class: 'palette-results', id: 'pal-res', role: 'listbox' });
     let items = [], sel = 0, timer, seq = 0;
     const select = i => {
@@ -196,7 +196,7 @@ export function openPalette() {
       list.replaceChildren(...(items.length ? items.map((idea, i) => el('button', {
         class: 'palette-item', role: 'option', type: 'button', 'aria-selected': String(i === 0), onclick: () => go(idea), onmouseenter: () => select(i),
       }, el('span', { class: 'mini' }), el('span', {}, el('div', { class: 't', text: idea.title }), el('div', { class: 's', text: `“${idea.epitaph}” · ${idea.cause}` })))) :
-        [el('div', { class: 'palette-empty', text: term ? 'No graves match that. Maybe it is still alive?' : 'The graveyard is quiet.' })]));
+        [el('div', { class: 'palette-empty', text: term ? 'No obituaries match. Maybe it is still alive.' : 'No obituaries yet.' })]));
       sel = 0;
     };
     input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(search, 160); });
@@ -238,10 +238,10 @@ export function openReport(idea) {
   openDialog(close => {
     const reason = el('input', { class: 'input', maxlength: 200, autofocus: true, placeholder: 'Spam, abuse, personal info…' });
     const submit = el('button', { class: 'btn btn-danger', type: 'submit', text: 'Report' });
-    return [dialogHead('Report this grave', close), el('div', { class: 'dlg-body' }, el('form', {
+    return [dialogHead('Report this obituary', close), el('div', { class: 'dlg-body' }, el('form', {
       onsubmit: async e => {
         e.preventDefault();
-        try { await post(`/api/ideas/${idea.id}/report`, { reason: reason.value }); toast('Thanks. A groundskeeper will take a look.'); close(); }
+        try { await post(`/api/ideas/${idea.id}/report`, { reason: reason.value }); toast('Thanks. A moderator will take a look.'); close(); }
         catch (ex) { toast(ex.message, 'error'); }
       },
     }, field('What is wrong?', reason), el('div', { class: 'dlg-foot' }, submit)))];

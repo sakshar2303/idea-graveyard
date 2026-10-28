@@ -69,7 +69,8 @@ export function timeAgo(t) {
 }
 
 export const fmtDate = t => new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-export const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const IRREGULAR = { person: 'people', obituary: 'obituaries' };
+export const plural = (n, word) => `${n} ${n === 1 ? word : IRREGULAR[word] || `${word}s`}`;
 
 export function toast(message, kind = '') {
   const t = el('div', { class: `toast ${kind}` }, message);
@@ -97,43 +98,17 @@ export function dialogHead(title, close) {
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// full-screen moments: resurrection, launch, burial
+// a rubber stamp that thumps onto the page for big moments: buried, revived, launched
 export function moment(kind, word) {
-  if (reduced()) return;
-  const fx = document.getElementById('fx');
-  const cls = kind === 'launch' ? 'gold' : kind === 'bury' ? 'dust' : '';
-  const nodes = [el('div', { class: `fx-flash ${cls}` }), el('div', { class: `fx-word ${cls}`, text: word })];
-  for (let i = 0; i < 36; i++) {
-    nodes.push(el('i', { class: `fx-soul ${cls}`, vars: { '--dx': `${(Math.random() - .5) * 300}px` },
-      style: { left: `${10 + Math.random() * 80}%`, animationDelay: `${Math.random() * .6}s` } }));
-  }
-  fx.append(...nodes);
-  setTimeout(() => nodes.forEach(n => n.remove()), 2400);
+  const label = { bury: 'Laid to rest', rise: 'Revival begun', launch: 'Revived' }[kind] || word;
+  const stamp = el('div', { class: `stamp stamp-${kind}`, role: 'presentation', text: label });
+  document.body.append(stamp);
+  setTimeout(() => stamp.classList.add('out'), reduced() ? 900 : 1300);
+  setTimeout(() => stamp.remove(), 1800);
 }
 
 export function bump(node) {
   node.classList.remove('pop');
   void node.offsetWidth;
   node.classList.add('pop');
-}
-
-export function embers() {
-  if (reduced()) return;
-  const box = document.getElementById('embers');
-  for (let i = 0; i < 22; i++) {
-    box.append(el('i', { class: 'ember', vars: { '--dx': `${(Math.random() - .5) * 160}px` },
-      style: { left: `${Math.random() * 100}%`, animationDuration: `${14 + Math.random() * 18}s`, animationDelay: `${-Math.random() * 30}s`,
-        opacity: 0, width: `${2 + Math.random() * 3}px`, height: `${2 + Math.random() * 3}px` } }));
-  }
-}
-
-// gentle 3D tilt that follows the pointer
-export function tilt(node) {
-  if (reduced() || matchMedia('(hover: none)').matches) return;
-  node.addEventListener('pointermove', e => {
-    const r = node.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-    node.style.transform = `rotateY(${x * 10}deg) rotateX(${-y * 8}deg) translateY(-4px)`;
-  });
-  node.addEventListener('pointerleave', () => { node.style.transform = ''; });
 }

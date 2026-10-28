@@ -1,40 +1,35 @@
-// Tombstone card and the candle / me-too / resurrect actions shared across pages.
-import { el, icon, fmtDate, tilt, bump, toast } from './ui.js';
+// Obituary entries and the candle / me-too / revive actions shared across pages.
+import { el, fmtDate, bump, toast, plural } from './ui.js';
 import { post } from './api.js';
 import { requireAuth } from './state.js';
 import { openResurrect } from './dialogs.js';
 
-const STATUS_LABEL = { dead: 'Deceased', planning: 'Stirring', building: 'Rising', launched: 'Alive' };
-export const statusPill = s => el('span', { class: `status-pill st-${s}`, text: STATUS_LABEL[s] || s });
+const STATUS_LABEL = { dead: 'Deceased', planning: 'Revival planned', building: 'Revival underway', launched: 'Revived' };
+export const statusPill = s => el('span', { class: `status st-${s}`, text: STATUS_LABEL[s] || s });
 
-export const ripLabel = status => status === 'launched' ? 'IT LIVES' : status === 'dead' ? 'R.I.P.' : 'RISING';
+// small-caps line above a headline: the status for revived ideas, the cause otherwise
+export function kicker(idea) {
+  return idea.status === 'dead'
+    ? el('div', { class: 'kicker' }, el('span', { text: 'Cause of death' }), idea.cause)
+    : el('div', { class: `kicker revived st-${idea.status}` }, el('span', { text: STATUS_LABEL[idea.status] }), idea.cause);
+}
 
-export function stoneFace(idea, { big = false } = {}) {
-  const wrap = el('div', { class: `grave ${idea.status === 'launched' ? 'launched' : idea.status !== 'dead' ? 'risen' : ''}` });
-  // the title link stretches over the whole stone; footer controls sit above it
-  const title = big ? idea.title : el('a', { class: 'stone-link', href: `/idea/${idea.id}`, 'data-link': true, text: idea.title });
-  const stone = el('div', { class: 'stone' },
-    el('div', { class: 'rip', text: ripLabel(idea.status) }),
-    el(big ? 'h1' : 'h3', { class: 'engraved' }, title),
-    el('p', { class: 'epitaph', text: `“${idea.epitaph}”` }),
-    el('div', { class: 'cause' }, idea.cause, el('span', { class: 'dot', text: '·' }), fmtDate(idea.buriedAt)),
-    big && idea.tags?.length ? el('div', { class: 'tags' }, idea.tags.map(t => el('a', { class: 'tag', href: `/?tag=${encodeURIComponent(t)}`, 'data-link': true, text: `#${t}` }))) : null,
-  );
-  wrap.append(stone);
-  if (!big) tilt(stone);
-  return { wrap, stone };
+export function survivedBy(idea) {
+  const n = idea.counts.same;
+  if (!n) return null;
+  return el('p', { class: 'survived', text: `Survived by ${plural(n, 'person')} with the same problem.` });
 }
 
 export function actionBar(idea, { onChange } = {}) {
   const mine = idea.mine || {};
-  const mk = (kind, label, ic, count, on) => el('button', {
-    class: `act ${kind}${on ? ' on' : ''}`, type: 'button', 'aria-pressed': String(!!on), 'aria-label': `${label} (${count})`, title: label,
+  const mk = (kind, label, count, on) => el('button', {
+    class: `act ${kind}${on ? ' on' : ''}`, type: 'button', 'aria-pressed': String(!!on),
     onclick: async e => {
       e.preventDefault(); e.stopPropagation();
       const btn = e.currentTarget;
       if (kind === 'res') {
-        if (!(await requireAuth('Sign in to resurrect this idea.'))) return;
-        if (idea.mine?.resurrected) return toast('You are already resurrecting this one.');
+        if (!(await requireAuth('Sign in to revive this idea.'))) return;
+        if (idea.mine?.resurrected) return toast('You are already reviving this one.');
         return openResurrect(idea, updated => onChange?.(updated));
       }
       if (!(await requireAuth(kind === 'candle' ? 'Sign in to light a candle.' : 'Sign in to say you have this problem too.'))) return;
@@ -46,34 +41,48 @@ export function actionBar(idea, { onChange } = {}) {
         onChange?.(idea);
       } catch (err) { toast(err.message, 'error'); }
     },
-  }, icon(ic), String(count));
+  }, el('span', { class: 'act-label', text: label }), el('span', { class: 'act-n', text: count }));
   return el('div', { class: 'actions' },
-    mk('candle', 'Light a candle', 'candle', idea.counts.candles, mine.candle),
-    mk('same', 'I have this problem too', 'same', idea.counts.same, mine.same),
-    mk('res', mine.resurrected ? 'You are resurrecting this' : 'Resurrect', 'res', idea.counts.resurrections, mine.resurrected),
-  );
+    mk('candle', mine.candle ? 'Candle lit' : 'Candle', idea.counts.candles, mine.candle),
+    mk('same', 'Me too', idea.counts.same, mine.same),
+    mk('res', mine.resurrected ? 'Reviving' : 'Revive', idea.counts.resurrections, mine.resurrected));
 }
 
+// one obituary in the columns
 export function graveCard(idea) {
   const holder = el('div', { class: 'cell' });
   const paint = () => {
-    const { wrap, stone } = stoneFace(idea);
-    const foot = el('div', { class: 'stone-foot' },
-      actionBar(idea, { onChange: updated => { Object.assign(idea, updated); paint(); } }),
-      el('div', { class: 'byline' }, 'by ', el('a', { href: `/u/${encodeURIComponent(idea.author.username)}`, 'data-link': true, text: idea.author.displayName })));
-    stone.append(foot);
-    holder.replaceChildren(wrap);
+    const entry = el('article', { class: `obit${idea.status !== 'dead' ? ' is-revived' : ''}` },
+      kicker(idea),
+      el('h3', { class: 'obit-title' }, el('a', { class: 'stone-link', href: `/idea/${idea.id}`, 'data-link': true, text: idea.title })),
+      el('p', { class: 'obit-epitaph', text: `“${idea.epitaph}”` }),
+      el('p', { class: 'obit-meta' }, `Buried ${fmtDate(idea.buriedAt)} by `,
+        el('a', { href: `/u/${encodeURIComponent(idea.author.username)}`, 'data-link': true, text: idea.author.displayName })),
+      survivedBy(idea),
+      actionBar(idea, { onChange: updated => { Object.assign(idea, updated); paint(); } }));
+    holder.replaceChildren(entry);
   };
   paint();
   return holder;
 }
 
-export function skeletonGrid(n = 8) {
-  return Array.from({ length: n }, () => el('div', { class: 'grave skeleton' },
-    el('div', { class: 'stone' }, el('div', { class: 'bar', style: { width: '30%' } }), el('div', { class: 'bar', style: { width: '80%', height: '22px' } }),
-      el('div', { class: 'bar', style: { width: '60%' } }), el('div', { class: 'bar', style: { width: '70%' } }))));
+// a press clipping of an idea, used for the live preview when burying
+export function stoneFace(idea) {
+  const wrap = el('div', { class: 'clipping' },
+    el('div', { class: 'clipping-head', text: 'Obituary' }),
+    kicker(idea),
+    el('h3', { class: 'obit-title', text: idea.title }),
+    el('p', { class: 'obit-epitaph', text: `“${idea.epitaph}”` }),
+    el('p', { class: 'obit-meta', text: `Buried ${fmtDate(idea.buriedAt)}` }),
+    idea.tags?.length ? el('p', { class: 'obit-tags', text: idea.tags.map(t => `#${t}`).join('  ') }) : null);
+  return { wrap, stone: wrap };
+}
+
+export function skeletonGrid(n = 6) {
+  return Array.from({ length: n }, () => el('div', { class: 'cell skeleton' },
+    el('div', { class: 'obit' }, el('i', { class: 'bar w30' }), el('i', { class: 'bar w80 tall' }), el('i', { class: 'bar w60' }), el('i', { class: 'bar w70' }))));
 }
 
 export function emptyState(title, text, action) {
-  return el('div', { class: 'empty' }, el('div', { class: 'big', text: '⚰️' }), el('h3', { text: title }), el('p', { text }), action || null);
+  return el('div', { class: 'empty' }, el('h3', { text: title }), el('p', { text }), action || null);
 }

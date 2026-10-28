@@ -1,5 +1,5 @@
 // App shell: nav, notifications, live ticker, keyboard shortcuts and routes.
-import { el, icon, avatar, timeAgo, toast, embers } from './ui.js';
+import { el, icon, avatar, timeAgo, toast } from './ui.js';
 import { api, post } from './api.js';
 import { state, setMe, onAuth, requireAuth } from './state.js';
 import { route, startRouter, navigate, render } from './router.js';
@@ -10,7 +10,7 @@ import { profileView, leaderboardView, adminView } from './views/people.js';
 import { startMotion } from './motion.js';
 
 const NOTE_COPY = {
-  resurrected: 'started resurrecting',
+  resurrected: 'started reviving',
   same: 'has the same problem as',
   eulogy: 'left a eulogy on',
   launched: 'brought back to life',
@@ -41,8 +41,8 @@ function paintNav() {
   const me = state.me;
   if (!me) {
     box.replaceChildren(
-      el('button', { class: 'btn btn-ghost', onclick: () => openAuth(null, 'login'), text: 'Sign in' }),
-      el('button', { class: 'btn btn-primary', 'aria-label': 'Bury an idea', onclick: async () => { if (await requireAuth('Create an account to bury your first idea.')) openBury(); } }, icon('shovel'), el('span', { class: 'lbl', text: 'Bury' })));
+      el('button', { class: 'btn btn-text', onclick: () => openAuth(null, 'login'), text: 'Sign in' }),
+      el('button', { class: 'btn btn-primary', 'aria-label': 'Bury an idea', onclick: async () => { if (await requireAuth('Create an account to bury your first idea.')) openBury(); } }, el('span', { class: 'lbl', text: 'Write an obituary' }), el('span', { class: 'lbl-short', text: 'Write' })));
     return;
   }
   const bell = el('button', { class: 'btn icon-btn', 'aria-label': `Notifications${me.unread ? `, ${me.unread} unread` : ''}` }, icon('bell'),
@@ -54,21 +54,21 @@ function paintNav() {
       menu.append(...(r.items.length ? r.items.map(n => el('a', { class: `menu-item ${n.read ? '' : 'unread'}`, role: 'menuitem', href: n.idea ? `/idea/${n.idea.id}` : '/', 'data-link': true, onclick: closeMenus },
         n.actor ? avatar(n.actor, 'avatar-sm') : null,
         el('span', {}, el('b', { text: n.actor?.displayName || 'Someone' }), ` ${NOTE_COPY[n.kind] || 'interacted with'} `, el('b', { text: n.idea?.title || 'your idea' }), el('time', { text: timeAgo(n.createdAt) })))) :
-        [el('div', { class: 'palette-empty', text: 'Silence. Bury something and the living will come.' })]));
+        [el('div', { class: 'palette-empty', text: 'No news yet. Write an obituary and the readers will come.' })]));
       if (r.unread) { await post('/api/notifications/read'); setMe({ ...state.me, unread: 0 }); }
     } catch (e) { menu.append(el('div', { class: 'palette-empty', text: e.message })); }
   });
   const user = menuButton(el('button', { class: 'btn btn-ghost icon-btn', 'aria-label': 'Account menu' }, avatar(me, 'avatar-sm')), menu => {
     const item = (label, fn) => el('button', { class: 'menu-item', role: 'menuitem', type: 'button', text: label, onclick: () => { closeMenus(); fn(); } });
     menu.append(el('div', { class: 'menu-head' }, el('span', { text: me.displayName }), el('span', { text: `@${me.username}` })),
-      item('My graves', () => navigate(`/u/${me.username}`)),
-      item('Resurrecting', () => navigate(`/u/${me.username}?tab=resurrecting`)),
+      item('My obituaries', () => navigate(`/u/${me.username}`)),
+      item('Reviving', () => navigate(`/u/${me.username}?tab=resurrecting`)),
       item('Edit profile', openSettings),
-      me.admin ? item('Groundskeeper', () => navigate('/admin')) : null,
+      me.admin ? item('Moderation', () => navigate('/admin')) : null,
       el('div', { class: 'menu-sep' }),
-      item('Sign out', async () => { await post('/api/auth/logout').catch(() => {}); setMe(null); toast('See you on the other side.'); render(); }));
+      item('Sign out', async () => { await post('/api/auth/logout').catch(() => {}); setMe(null); toast('Signed out.'); render(); }));
   });
-  box.replaceChildren(notes, el('button', { class: 'btn btn-primary', 'aria-label': 'Bury an idea', onclick: openBury }, icon('shovel'), el('span', { class: 'lbl', text: 'Bury' })), user);
+  box.replaceChildren(notes, el('button', { class: 'btn btn-primary', 'aria-label': 'Bury an idea', onclick: openBury }, el('span', { class: 'lbl', text: 'Write an obituary' }), el('span', { class: 'lbl-short', text: 'Write' })), user);
 }
 
 // live ticker over server-sent events
@@ -86,9 +86,9 @@ function startLive() {
     document.dispatchEvent(new CustomEvent('graveyard:live', { detail: d }));
   };
   const es = new EventSource('/api/events');
-  es.addEventListener('buried', e => show('just buried', JSON.parse(e.data)));
-  es.addEventListener('resurrected', e => show('is resurrecting', JSON.parse(e.data)));
-  es.addEventListener('launched', e => show('brought back to life', JSON.parse(e.data)));
+  es.addEventListener('buried', e => show('published an obituary for', JSON.parse(e.data)));
+  es.addEventListener('resurrected', e => show('started reviving', JSON.parse(e.data)));
+  es.addEventListener('launched', e => show('relaunched', JSON.parse(e.data)));
 }
 
 function shortcuts() {
@@ -106,13 +106,14 @@ function shortcuts() {
 
 function notFound(main) {
   document.title = 'Lost · Idea Graveyard';
-  main.replaceChildren(el('div', { class: 'page notfound' }, el('h1', { text: '404' }), el('p', { text: 'You wandered off the path. Even ghosts get lost here.' }),
-    el('a', { class: 'btn btn-primary', href: '/', 'data-link': true, text: 'Back to the graveyard' })));
+  main.replaceChildren(el('div', { class: 'page notfound' }, el('h1', { text: '404' }), el('p', { text: 'This page has passed away. It was never born, really.' }),
+    el('a', { class: 'btn btn-primary', href: '/', 'data-link': true, text: 'Back to the front page' })));
 }
 
 async function boot() {
-  embers();
   startMotion();
+  const edition = document.getElementById('edition');
+  if (edition) edition.textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   document.getElementById('searchBtn').addEventListener('click', openPalette);
   try {
     const r = await api('/api/me');

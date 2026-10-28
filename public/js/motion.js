@@ -1,4 +1,4 @@
-// Scroll motion: reveal-on-scroll, sky parallax, hero fade, progress bar and scroll-linked drawing.
+// Scroll motion: reveal-on-scroll, a reading progress bar and scroll-linked drawing.
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
 let observer;
@@ -49,20 +49,6 @@ function frame() {
   document.body.classList.toggle('scrolled', y > 40);
   if (reduced.matches) return;
 
-  // sky layers drift at different speeds for depth
-  setY('.moon', Math.max(-260, y * -0.3));
-  setY('.stars', y * -0.06);
-  setY('.fog-b', y * -0.18);
-
-  // hero sinks slightly and fades as you leave it
-  const hero = document.querySelector('.hero-inner');
-  if (hero) {
-    const p = Math.min(1, y / (h * 0.5));
-    hero.style.transform = `translate3d(0, ${y * 0.22}px, 0) scale(${1 - p * 0.05})`;
-    hero.style.opacity = String(1 - p);
-    hero.style.visibility = p >= 1 ? 'hidden' : '';
-  }
-
   for (const item of linked) {
     if (!item.node.isConnected) { linked.delete(item); continue; }
     const r = item.node.getBoundingClientRect();
@@ -70,11 +56,6 @@ function frame() {
     const p = Math.max(0, Math.min(1, (h - r.top) / (h * 0.6)));
     item.fn(p);
   }
-}
-
-function setY(sel, px) {
-  const n = document.querySelector(sel);
-  if (n) n.style.translate = `0 ${px.toFixed(1)}px`;
 }
 
 export function startMotion() {

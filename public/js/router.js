@@ -24,10 +24,7 @@ export async function render() {
     const params = Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])]));
     const ctx = { params, query: new URLSearchParams(location.search), cleanup: null };
     current = ctx;
-    document.querySelectorAll('[data-nav]').forEach(a => {
-      if (a.getAttribute('href') === location.pathname) a.setAttribute('aria-current', 'page');
-      else a.removeAttribute('aria-current');
-    });
+    markNav();
     await r.view(main, ctx);
     return;
   }
@@ -47,10 +44,21 @@ export function startRouter(notFound) {
   render();
 }
 
+// highlight the section link for the current page
+function markNav() {
+  const sort = new URLSearchParams(location.search).get('sort');
+  const here = location.pathname === '/' && ['wanted', 'risen'].includes(sort) ? `/?sort=${sort}` : location.pathname;
+  document.querySelectorAll('[data-nav]').forEach(a => {
+    if (a.dataset.nav === here) a.setAttribute('aria-current', 'page');
+    else a.removeAttribute('aria-current');
+  });
+}
+
 // keep query params in the URL without re-rendering the view
 export function setQuery(params) {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v) q.set(k, v);
   const s = q.toString();
   history.replaceState({}, '', location.pathname + (s ? '?' + s : ''));
+  markNav();
 }

@@ -1,9 +1,9 @@
-// One grave: death certificate, AI autopsy, resurrection crew and eulogies.
+// One obituary: the deceased, the coroner's report, revival efforts and condolences.
 import { el, icon, avatar, timeAgo, fmtDate, toast, moment, bump, plural } from '../ui.js';
 import { api, post, patch, del } from '../api.js';
 import { state, requireAuth } from '../state.js';
 import { navigate } from '../router.js';
-import { stoneFace, statusPill, emptyState } from '../components.js';
+import { statusPill, emptyState, kicker } from '../components.js';
 import { openResurrect, openReport, confirmDialog } from '../dialogs.js';
 import { reveal } from '../motion.js';
 
@@ -27,41 +27,43 @@ export async function ideaView(main, ctx) {
 
 function render(main, idea, update) {
   document.title = `R.I.P. ${idea.title} · Idea Graveyard`;
-  const { wrap } = stoneFace(idea, { big: true });
-  wrap.querySelector('.stone').append(el('div', { class: 'stone-foot' },
-    el('div', { class: 'byline' }, avatar(idea.author, 'avatar-sm'), 'Buried by ',
-      el('a', { href: `/u/${encodeURIComponent(idea.author.username)}`, 'data-link': true, text: idea.author.displayName }), ` · ${timeAgo(idea.buriedAt)}`)));
+  const head = el('header', { class: 'story-head' },
+    kicker(idea),
+    el('h1', { class: 'story-title', text: idea.title }),
+    el('p', { class: 'story-deck', text: `“${idea.epitaph}”` }),
+    el('div', { class: 'story-byline' }, 'Buried by ', el('a', { href: `/u/${encodeURIComponent(idea.author.username)}`, 'data-link': true, text: idea.author.displayName }),
+      el('span', { text: `on ${fmtDate(idea.buriedAt)}` })),
+    idea.tags?.length ? el('div', { class: 'story-tags' }, idea.tags.map(t => el('a', { class: 'tag', href: `/?tag=${encodeURIComponent(t)}`, 'data-link': true, text: `#${t}` }))) : null);
 
-  const left = el('div', {}, wrap, shareBar(idea),
-    el('div', { class: 'share' },
-      idea.canDelete ? el('button', { class: 'btn btn-ghost btn-sm btn-danger', onclick: async () => {
-        if (!(await confirmDialog('Exhume this grave?', 'This permanently deletes the idea, its candles, eulogies and resurrections.', 'Exhume'))) return;
-        try { await del(`/api/ideas/${idea.id}`); toast('Exhumed.'); navigate('/'); } catch (e) { toast(e.message, 'error'); }
-      } }, icon('trash'), 'Exhume') : null,
-      state.me && !idea.canDelete ? el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openReport(idea) }, icon('flag'), 'Report') : null));
+  const rail = el('aside', { class: 'story-rail' }, pulseCard(idea, update), shareBar(idea),
+    el('div', { class: 'rail-tools' },
+      idea.canDelete ? el('button', { class: 'btn btn-sm btn-danger', onclick: async () => {
+        if (!(await confirmDialog('Delete this obituary?', 'This permanently deletes the idea, its candles, condolences and revivals.', 'Delete'))) return;
+        try { await del(`/api/ideas/${idea.id}`); toast('Obituary deleted.'); navigate('/'); } catch (e) { toast(e.message, 'error'); }
+      } }, 'Delete obituary') : null,
+      state.me && !idea.canDelete ? el('button', { class: 'btn btn-sm btn-text', onclick: () => openReport(idea) }, 'Report') : null));
 
-  const cards = [pulseCard(idea, update), certificateCard(idea), autopsyCard(idea, update), crewCard(idea, update), eulogyCard(idea, update)];
-  const right = el('div', {}, cards);
+  const cards = [certificateCard(idea), autopsyCard(idea, update), crewCard(idea, update), eulogyCard(idea, update)];
   // animate only on first paint, not on every in-place update
-  if (!main.querySelector('.detail')) reveal(cards);
+  if (!main.querySelector('.story')) reveal([head, ...cards]);
 
-  main.replaceChildren(el('div', { class: 'page' },
-    el('nav', { class: 'crumbs', 'aria-label': 'Breadcrumb' }, el('a', { href: '/', 'data-link': true, text: 'Graveyard' }), '/', el('span', { text: idea.title })),
-    el('div', { class: 'detail' }, left, right)));
+  main.replaceChildren(el('article', { class: 'page story' },
+    el('nav', { class: 'crumbs', 'aria-label': 'Breadcrumb' }, el('a', { href: '/', 'data-link': true, text: 'Obituaries' }), '/', el('span', { text: idea.cause })),
+    head, el('div', { class: 'story-grid' }, el('div', { class: 'story-body' }, cards), rail)));
 }
 
 function shareBar(idea) {
   const url = `${location.origin}/idea/${idea.id}`;
   const text = `My idea "${idea.title}" just got buried at the Idea Graveyard. Epitaph: "${idea.epitaph}". Anyone want to resurrect it?`;
   return el('div', { class: 'share' },
-    el('a', { class: 'btn btn-sm', target: '_blank', rel: 'noopener', href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}` }, icon('linkedin'), 'Share'),
+    el('a', { class: 'btn btn-sm', target: '_blank', rel: 'noopener', href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}` }, 'LinkedIn'),
     el('button', { class: 'btn btn-sm', onclick: async () => {
       try {
         if (navigator.share && matchMedia('(hover: none)').matches) await navigator.share({ title: idea.title, text, url });
         else { await navigator.clipboard.writeText(`${text} ${url}`); toast('Link and caption copied.'); }
       } catch {}
-    } }, icon('link'), 'Copy'),
-    el('button', { class: 'btn btn-sm', onclick: () => downloadTombstone(idea) }, icon('download'), 'Image'));
+    } }, 'Copy link'),
+    el('button', { class: 'btn btn-sm', onclick: () => downloadTombstone(idea) }, 'Clipping'));
 }
 
 function pulseCard(idea, update) {
@@ -78,27 +80,27 @@ function pulseCard(idea, update) {
     } catch (err) { toast(err.message, 'error'); }
   };
   const resurrect = async () => {
-    if (!(await requireAuth('Sign in to resurrect this idea.'))) return;
+    if (!(await requireAuth('Sign in to revive this idea.'))) return;
     if (mine.resurrected) return document.getElementById('crew')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     openResurrect(idea, update);
   };
   const same = idea.counts.same;
-  return el('section', { class: 'card', 'aria-label': 'Community pulse' },
+  return el('section', { class: 'respects', 'aria-label': 'Pay your respects' }, el('h2', { class: 'label', text: 'Pay your respects' }),
     el('div', { class: 'pulse-row' },
       tile('candle', idea.counts.candles, mine.candle ? 'Candle lit' : 'Light a candle', mine.candle, toggle('candle')),
-      tile('same', same, mine.same ? 'You have it too' : 'I have this problem', mine.same, toggle('same')),
-      tile('res', idea.counts.resurrections, mine.resurrected ? 'You are on it' : 'Resurrect it', mine.resurrected, resurrect)),
+      tile('same', same, mine.same ? 'You have this problem too' : 'I have this problem too', mine.same, toggle('same')),
+      tile('res', idea.counts.resurrections, mine.resurrected ? 'You are reviving it' : 'Revive this idea', mine.resurrected, resurrect)),
     el('p', { class: 'pulse-hint', text: same >= 3
       ? `${plural(same, 'person')} said they have this problem. That is a signal worth building on.`
-      : 'Every "I have this problem" is a real validation signal for whoever resurrects it.' }));
+      : 'Every “me too” is real validation for whoever revives it.' }));
 }
 
 function certificateCard(idea) {
   const fact = (label, value, empty) => el('div', { class: 'fact' }, el('dt', { text: label }), el('dd', { class: value ? '' : 'dim', text: value || empty }));
-  return el('section', { class: 'card' }, el('h2', { text: 'Death certificate' }),
+  return el('section', { class: 'card' }, el('h2', { text: 'The deceased' }),
     el('dl', { class: 'facts' },
-      fact('The problem', idea.problem, 'The founder did not say. Ask in the eulogies.'),
-      fact('Who suffered', idea.audience, 'Unknown'),
+      fact('The problem', idea.problem, 'The founder did not say. Ask in the condolences.'),
+      fact('Mourned by', idea.audience, 'Unknown'),
       fact('Cause of death', idea.cause),
       idea.story ? fact('What happened', idea.story) : null,
       fact('Time of death', fmtDate(idea.buriedAt))));
@@ -106,28 +108,30 @@ function certificateCard(idea) {
 
 function autopsyCard(idea, update) {
   const card = el('section', { class: 'card', 'aria-live': 'polite' });
-  const head = el('h2', {}, icon('spark'), 'AI autopsy');
+  const head = el('h2', { text: 'The coroner’s report' });
   if (idea.autopsy) {
     const a = idea.autopsy;
-    card.append(head,
+    card.append(head, el('div', { class: 'report' },
+      el('div', { class: 'report-head' }, el('span', { text: 'Autopsy' }), el('span', { text: fmtDate(a.createdAt) })),
+      el('div', { class: 'report-body' },
       el('p', { class: 'verdict', text: a.verdict }),
-      el('div', { class: 'odds' }, el('div', { class: 'odds-ring', vars: { '--p': a.survivalOdds }, text: `${a.survivalOdds}%` }),
-        el('p', {}, el('strong', { text: 'Survival odds if resurrected' }), a.whyNow)),
+      el('div', { class: 'odds' }, el('div', { class: 'odds-ring', text: `${a.survivalOdds}%` }),
+        el('p', {}, el('strong', { text: 'Odds of surviving a revival' }), a.whyNow)),
       el('div', { class: 'autopsy-grid' },
         el('div', {}, el('h3', { text: 'Root causes' }), el('ul', { class: 'cause-list' }, a.rootCauses.map(c => el('li', {}, el('b', { text: c.title }), el('span', { text: c.detail }))))),
-        el('div', {}, el('h3', { text: 'Resurrection plan' }), el('ol', { class: 'plan' }, a.resurrectionPlan.map(s => el('li', {}, el('b', { text: s.step }), el('span', { text: s.detail }))))),
+        el('div', {}, el('h3', { text: 'How to revive it' }), el('ol', { class: 'plan' }, a.resurrectionPlan.map(s => el('li', {}, el('b', { text: s.step }), el('span', { text: s.detail }))))),
         el('div', {}, el('h3', { text: 'Ship this in 48 hours' }), el('div', { class: 'callout', text: a.mvp48h })),
         el('div', {}, el('h3', { text: 'Ask real users first' }), el('ol', { class: 'qs' }, a.validationQuestions.map(q => el('li', { text: q }))))),
-      el('p', { class: 'ai-note', text: `Performed by Claude on ${fmtDate(a.createdAt)}. AI can be wrong, so validate with real users.` }));
+      el('p', { class: 'ai-note', text: 'Performed by Claude. AI can be wrong, so check it with real users.' }))));
     return card;
   }
   if (!idea.aiEnabled) {
-    card.append(head, el('div', { class: 'autopsy-cta' }, el('p', { text: 'The coroner is off duty. Autopsies switch on when the server has an Anthropic API key.' })));
+    card.append(head, el('div', { class: 'autopsy-cta' }, el('p', { text: 'The coroner is off duty. Reports switch on when the server has an Anthropic API key.' })));
     return card;
   }
-  const btn = el('button', { class: 'btn btn-soul btn-lg' }, icon('spark'), 'Perform the autopsy');
+  const btn = el('button', { class: 'btn btn-primary btn-lg', text: 'Request the coroner’s report' });
   btn.addEventListener('click', async () => {
-    if (!(await requireAuth('Sign in to request an autopsy.'))) return;
+    if (!(await requireAuth('Sign in to request the coroner’s report.'))) return;
     card.replaceChildren(head, el('div', { class: 'scan', text: 'The coroner is examining the body…' }));
     try {
       const r = await post(`/api/ideas/${idea.id}/autopsy`);
@@ -138,15 +142,15 @@ function autopsyCard(idea, update) {
     }
   });
   card.append(head, el('div', { class: 'autopsy-cta' },
-    el('p', { text: 'Let Claude examine this idea: why it really died, the odds it survives a second life, and a plan to ship it in 48 hours.' }), btn));
+    el('p', { text: 'Claude examines the idea: why it really died, its odds in a second life, and a plan to ship it in 48 hours.' }), btn));
   return card;
 }
 
 function crewCard(idea, update) {
-  const card = el('section', { class: 'card', id: 'crew' }, el('h2', {}, 'Resurrection crew', el('span', { class: 'count', text: idea.resurrections.length }), el('span', { class: 'spacer' }),
-    !idea.mine?.resurrected ? el('button', { class: 'btn btn-soul btn-sm', onclick: async () => { if (await requireAuth('Sign in to resurrect this idea.')) openResurrect(idea, update); } }, icon('res'), 'Resurrect') : null));
+  const card = el('section', { class: 'card', id: 'crew' }, el('h2', {}, 'Revival efforts', el('span', { class: 'count', text: idea.resurrections.length }), el('span', { class: 'spacer' }),
+    !idea.mine?.resurrected ? el('button', { class: 'btn btn-sm', onclick: async () => { if (await requireAuth('Sign in to revive this idea.')) openResurrect(idea, update); } }, 'Revive it') : null));
   if (!idea.resurrections.length) {
-    card.append(el('p', { class: 'dlg-sub', text: 'Nobody has picked up the shovel yet. Be the first to bring it back.' }));
+    card.append(el('p', { class: 'dlg-sub', text: 'Nobody is reviving this yet. Be the first to bring it back.' }));
     return card;
   }
   card.append(el('div', { class: 'crew' }, idea.resurrections.map(r => builderBlock(idea, r, update))));
@@ -176,8 +180,8 @@ function builderBlock(idea, r, update) {
       } catch (e) { toast(e.message, 'error'); save.disabled = false; }
     });
     const abandon = el('button', { class: 'btn btn-ghost btn-sm btn-danger', text: 'Abandon', onclick: async () => {
-      if (!(await confirmDialog('Abandon this resurrection?', 'Your plan and updates will be removed. The idea goes back to rest.', 'Abandon'))) return;
-      try { update(await del(`/api/resurrections/${r.id}`)); toast('Back to the earth it goes.'); } catch (e) { toast(e.message, 'error'); }
+      if (!(await confirmDialog('Abandon this revival?', 'Your plan and updates will be removed. The idea goes back to rest.', 'Abandon'))) return;
+      try { update(await del(`/api/resurrections/${r.id}`)); toast('Revival abandoned.'); } catch (e) { toast(e.message, 'error'); }
     } });
     block.append(el('div', { class: 'mine-tools' }, note, el('div', { class: 'row' }, status, link), el('div', { class: 'row' }, save, el('span', { class: 'spacer' }), abandon)));
   }
@@ -185,69 +189,66 @@ function builderBlock(idea, r, update) {
 }
 
 function eulogyCard(idea, update) {
-  const body = el('textarea', { class: 'textarea', maxlength: 500, placeholder: state.me ? 'Say a few words for the departed…' : 'Sign in to leave a eulogy', rows: 2 });
-  const send = el('button', { class: 'btn', type: 'submit' }, icon('eulogy'), 'Post');
+  const body = el('textarea', { class: 'textarea', maxlength: 500, placeholder: state.me ? 'A few words for the departed…' : 'Sign in to leave a condolence', rows: 2 });
+  const send = el('button', { class: 'btn btn-primary', type: 'submit', text: 'Post' });
   const form = el('form', { class: 'compose', onsubmit: async e => {
     e.preventDefault();
-    if (!(await requireAuth('Sign in to leave a eulogy.'))) return;
+    if (!(await requireAuth('Sign in to leave a condolence.'))) return;
     send.disabled = true;
     try { update(await post(`/api/ideas/${idea.id}/eulogies`, { body: body.value })); }
     catch (err) { toast(err.message, 'error'); send.disabled = false; }
   } }, body, send);
-  return el('section', { class: 'card' }, el('h2', {}, 'Eulogies', el('span', { class: 'count', text: idea.eulogies.length })),
+  return el('section', { class: 'card' }, el('h2', {}, 'Condolences', el('span', { class: 'count', text: idea.eulogies.length })),
     idea.eulogies.length ? idea.eulogies.map(e => el('div', { class: 'eulogy' }, avatar(e.user),
       el('div', { class: 'eulogy-body' },
         el('div', { class: 'eulogy-meta' }, el('a', { href: `/u/${encodeURIComponent(e.user.username)}`, 'data-link': true, text: e.user.displayName }), timeAgo(e.createdAt),
-          e.canDelete ? el('button', { class: 'btn btn-ghost btn-sm del', 'aria-label': 'Delete eulogy', onclick: async () => {
+          e.canDelete ? el('button', { class: 'btn btn-ghost btn-sm del', 'aria-label': 'Delete condolence', onclick: async () => {
             try { update(await del(`/api/eulogies/${e.id}`)); } catch (err) { toast(err.message, 'error'); }
-          } }, icon('trash')) : null),
-        el('p', { text: e.body })))) : el('p', { class: 'dlg-sub', text: 'No eulogies yet. Say something nice. Or honest.' }),
+          } }, 'Delete') : null),
+        el('p', { text: e.body })))) : el('p', { class: 'dlg-sub', text: 'No condolences yet. Say something kind, or honest.' }),
     form);
 }
 
-// draws a shareable 1080x1350 tombstone card
+// draws a shareable 1080x1350 newspaper clipping of the obituary
 async function downloadTombstone(idea) {
   await document.fonts?.ready;
+  const W = 1080, H = 1350, M = 96;
   const c = document.createElement('canvas');
-  c.width = 1080; c.height = 1350;
+  c.width = W; c.height = H;
   const g = c.getContext('2d');
-  const sky = g.createLinearGradient(0, 0, 0, 1350);
-  sky.addColorStop(0, '#111827'); sky.addColorStop(1, '#05060a');
-  g.fillStyle = sky; g.fillRect(0, 0, 1080, 1350);
-  g.fillStyle = 'rgba(255,250,225,.9)'; g.shadowColor = 'rgba(255,250,225,.5)'; g.shadowBlur = 60;
-  g.beginPath(); g.arc(880, 170, 70, 0, Math.PI * 2); g.fill(); g.shadowBlur = 0;
+  g.fillStyle = '#f4f1ea'; g.fillRect(0, 0, W, H);
+  g.fillStyle = '#161514'; g.textAlign = 'center';
 
-  const x = 190, y = 260, w = 700, h = 900, rad = 330;
-  const stone = g.createLinearGradient(0, y, 0, y + h);
-  const alive = idea.status !== 'dead';
-  stone.addColorStop(0, '#4a5262'); stone.addColorStop(.5, '#2d333f'); stone.addColorStop(1, '#1c2029');
-  g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + rad); g.arc(x + w / 2, y + rad, w / 2, Math.PI, 0); g.lineTo(x + w, y + h); g.closePath();
-  g.shadowColor = alive ? 'rgba(141,232,180,.45)' : 'rgba(0,0,0,.8)'; g.shadowBlur = 80;
-  g.fillStyle = stone; g.fill(); g.shadowBlur = 0;
-  g.strokeStyle = alive ? 'rgba(141,232,180,.6)' : 'rgba(255,255,255,.15)'; g.lineWidth = 3; g.stroke();
+  const rule = (y, w = 2) => { g.fillRect(M, y, W - 2 * M, w); };
+  g.font = '400 92px "Instrument Serif"'; g.fillText('Idea Graveyard', W / 2, 190);
+  rule(222, 2); rule(230, 2);
+  g.font = '500 22px "IBM Plex Mono"'; g.fillStyle = '#77716a';
+  g.fillText(`OBITUARIES  ·  ${fmtDate(idea.buriedAt).toUpperCase()}`, W / 2, 272);
 
-  const wrapText = (text, font, color, top, maxW, lh, maxLines = 4) => {
-    g.font = font; g.fillStyle = color; g.textAlign = 'center';
+  const wrap = (text, font, color, top, lh, maxLines) => {
+    g.font = font; g.fillStyle = color;
     const words = text.split(/\s+/); const lines = []; let line = '';
-    for (const word of words) {
-      const t = line ? `${line} ${word}` : word;
-      if (g.measureText(t).width > maxW && line) { lines.push(line); line = word; } else line = t;
+    for (const w of words) {
+      const t = line ? `${line} ${w}` : w;
+      if (g.measureText(t).width > W - 2 * M - 40 && line) { lines.push(line); line = w; } else line = t;
     }
     lines.push(line);
-    lines.slice(0, maxLines).forEach((l, i) => g.fillText(l, 540, top + i * lh));
+    lines.slice(0, maxLines).forEach((l, i) => g.fillText(l, W / 2, top + i * lh));
     return top + Math.min(lines.length, maxLines) * lh;
   };
-  wrapText(alive ? 'IT LIVES' : 'R . I . P .', '700 34px Cinzel', alive ? '#8de8b4' : '#9aa0ab', 420, 600, 40);
-  let ty = wrapText(idea.title, '700 64px Cinzel', '#ece9e2', 530, 560, 74, 4);
-  ty = wrapText(fmtDate(idea.buriedAt).toUpperCase(), '500 26px Cinzel', '#7d828f', ty + 20, 560, 30);
-  ty = wrapText(`“${idea.epitaph}”`, 'italic 500 46px "Cormorant Garamond"', '#cfccc4', ty + 50, 560, 54, 4);
-  wrapText(`Cause of death: ${idea.cause}`, '600 26px Inter', '#ffb547', ty + 40, 560, 32);
-  wrapText('Resurrect it at Idea Graveyard', '600 30px Inter', '#ece9e2', 1250, 900, 36);
-  wrapText(location.host, '500 24px Inter', '#7d828f', 1292, 900, 30);
+  const revived = idea.status !== 'dead';
+  g.font = '500 24px "IBM Plex Mono"'; g.fillStyle = revived ? '#2c6a4c' : '#b3321d';
+  g.fillText(revived ? 'REVIVED' : `CAUSE OF DEATH  ·  ${idea.cause.toUpperCase()}`, W / 2, 400);
+  let y = wrap(idea.title, '400 112px "Instrument Serif"', '#161514', 520, 112, 4);
+  y = wrap(`“${idea.epitaph}”`, 'italic 400 52px "Instrument Serif"', '#3b3833', y + 40, 62, 4);
+  if (idea.counts.same) wrap(`Survived by ${plural(idea.counts.same, 'person')} with the same problem.`, '400 30px Inter', '#3b3833', y + 50, 40, 2);
+  rule(H - 210, 1);
+  g.font = '400 40px "Instrument Serif"'; g.fillStyle = '#161514'; g.fillText('Revive it at Idea Graveyard', W / 2, H - 140);
+  g.font = '500 22px "IBM Plex Mono"'; g.fillStyle = '#77716a'; g.fillText(location.host, W / 2, H - 98);
 
   const a = document.createElement('a');
-  a.download = `rip-${idea.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}.png`;
+  a.download = `obituary-${idea.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40)}.png`;
   a.href = c.toDataURL('image/png');
   a.click();
-  toast('Tombstone saved. Post it on LinkedIn.');
+  toast('Clipping saved. Post it on LinkedIn.');
 }

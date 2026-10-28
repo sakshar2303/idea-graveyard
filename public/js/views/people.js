@@ -17,22 +17,22 @@ export async function profileView(main, ctx) {
   const tabs = el('div', { class: 'tabs' });
   const paint = () => {
     tabs.replaceChildren(
-      el('button', { class: 'tab', 'aria-pressed': String(tab === 'buried'), text: `Buried (${p.stats.buried})`, onclick: () => { tab = 'buried'; paint(); } }),
-      el('button', { class: 'tab', 'aria-pressed': String(tab === 'resurrecting'), text: `Resurrecting (${p.stats.resurrecting})`, onclick: () => { tab = 'resurrecting'; paint(); } }));
+      el('button', { class: 'tab', 'aria-pressed': String(tab === 'buried'), text: `Obituaries (${p.stats.buried})`, onclick: () => { tab = 'buried'; paint(); } }),
+      el('button', { class: 'tab', 'aria-pressed': String(tab === 'resurrecting'), text: `Reviving (${p.stats.resurrecting})`, onclick: () => { tab = 'resurrecting'; paint(); } }));
     const list = tab === 'buried' ? p.buried : p.resurrecting.map(r => r.idea);
     const cards = list.map(graveCard);
     reveal(cards, { kind: 'rise' });
     grid.replaceChildren(...(cards.length ? cards : [emptyState(
-      tab === 'buried' ? 'No graves dug yet' : 'Not resurrecting anything yet',
+      tab === 'buried' ? 'No obituaries yet' : 'Not reviving anything yet',
       isMe ? (tab === 'buried' ? 'Bury the first idea from your notes app.' : 'Find an idea worth a second life.') : 'Check back later.',
-      isMe && tab === 'buried' ? el('button', { class: 'btn btn-primary', onclick: openBury }, icon('shovel'), 'Bury an idea') : null)]));
+      isMe && tab === 'buried' ? el('button', { class: 'btn btn-primary', onclick: openBury, text: 'Write an obituary' }) : null)]));
   };
   const stat = (n, l) => el('div', {}, el('b', { text: n }), l);
   main.replaceChildren(el('div', { class: 'page' },
     el('section', { class: 'profile-head' }, avatar(p, 'avatar-lg'),
       el('div', {}, el('h1', { text: p.displayName }), el('div', { class: 'handle', text: `@${p.username} · joined ${fmtDate(p.joinedAt)}` }),
         p.bio ? el('p', { class: 'bio', text: p.bio }) : null,
-        el('div', { class: 'mini-stats' }, stat(p.stats.buried, 'ideas buried'), stat(p.stats.resurrecting, 'resurrecting'), stat(p.stats.launched, 'brought back to life'), stat(p.stats.candles, 'candles received'))),
+        el('div', { class: 'mini-stats' }, stat(p.stats.buried, 'ideas buried'), stat(p.stats.resurrecting, 'reviving'), stat(p.stats.launched, 'launched'), stat(p.stats.candles, 'candles received'))),
       el('span', { class: 'spacer' }),
       isMe ? el('button', { class: 'btn', onclick: openSettings, text: 'Edit profile' }) : null),
     el('div', { class: 'toolbar' }, tabs), grid));
@@ -40,8 +40,8 @@ export async function profileView(main, ctx) {
 }
 
 export async function leaderboardView(main) {
-  document.title = 'Hall of Souls · Idea Graveyard';
-  main.replaceChildren(el('div', { class: 'page' }, el('div', { class: 'scan', text: 'Counting souls…' })));
+  document.title = 'Hall of fame · Idea Graveyard';
+  main.replaceChildren(el('div', { class: 'page' }, el('div', { class: 'scan', text: 'Loading' })));
   let lb;
   try { lb = await api('/api/leaderboard'); }
   catch (err) { main.replaceChildren(el('div', { class: 'page' }, emptyState('The hall is locked', err.message))); return; }
@@ -57,14 +57,14 @@ export async function leaderboardView(main) {
     el('div', { class: 'bar-track' }, el('div', { class: 'bar-fill', 'data-w': `${(c.count / maxCause) * 100}%` })), el('b', { text: c.count }))));
 
   main.replaceChildren(el('div', { class: 'page' },
-    el('section', { class: 'lb-hero' }, el('h1', { text: 'Hall of Souls' }), el('p', { text: 'The builders who raise the dead, and the problems the community wants solved most.' })),
+    el('section', { class: 'lb-hero' }, el('h1', { text: 'Hall of fame' }), el('p', { text: 'The builders who bring ideas back, and the problems readers most want solved.' })),
     el('div', { class: 'lb' },
-      el('section', { class: 'card' }, el('h2', {}, icon('res'), 'Top resurrectionists'),
-        rank(lb.builders, u => u.launched ? `${u.launched}★` : u.resurrections, u => `${u.resurrections} resurrected · ${u.launched} alive · ${u.building} building`)),
-      el('section', { class: 'card' }, el('h2', {}, icon('same'), 'Most wanted problems'), ideaRank(lb.mostWanted, it => it.counts.same, 'people with this problem')),
-      el('section', { class: 'card' }, el('h2', {}, icon('candle'), 'Most mourned'), ideaRank(lb.mostMourned, it => it.counts.candles, 'candles')),
-      el('section', { class: 'card' }, el('h2', {}, icon('shovel'), 'Top gravediggers'), rank(lb.gravediggers, u => u.buried, u => `${u.candles} candles received`)),
-      el('section', { class: 'card' }, el('h2', {}, icon('skull'), 'Leading causes of death'), bars))));
+      el('section', { class: 'card' }, el('h2', { text: 'Top revivers' }),
+        rank(lb.builders, u => u.resurrections, u => `${u.resurrections} revivals · ${u.launched} launched · ${u.building} building`)),
+      el('section', { class: 'card' }, el('h2', { text: 'Most wanted problems' }), ideaRank(lb.mostWanted, it => it.counts.same, 'people with this problem')),
+      el('section', { class: 'card' }, el('h2', { text: 'Most mourned' }), ideaRank(lb.mostMourned, it => it.counts.candles, 'candles')),
+      el('section', { class: 'card' }, el('h2', { text: 'Most prolific founders' }), rank(lb.gravediggers, u => u.buried, u => `${u.candles} candles received`)),
+      el('section', { class: 'card' }, el('h2', { text: 'Leading causes of death' }), bars))));
   reveal([...main.querySelectorAll('.lb .card')]);
   const barsCard = bars.closest('.card');
   barsCard.addEventListener('reveal', () => main.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.w; }), { once: true });
@@ -72,8 +72,8 @@ export async function leaderboardView(main) {
 }
 
 export async function adminView(main) {
-  document.title = 'Groundskeeper · Idea Graveyard';
-  if (!state.me?.admin) { main.replaceChildren(el('div', { class: 'page' }, emptyState('Groundskeepers only', 'You need admin access to see this page.'))); return; }
+  document.title = 'Moderation · Idea Graveyard';
+  if (!state.me?.admin) { main.replaceChildren(el('div', { class: 'page' }, emptyState('Moderators only', 'You need admin access to see this page.'))); return; }
   const list = el('div');
   const load = async () => {
     const { reports } = await api('/api/admin/reports');
@@ -82,9 +82,9 @@ export async function adminView(main) {
         el('p', { text: `“${r.reason}” · reported by @${r.username} · ${fmtDate(r.created_at)}${r.hidden ? ' · hidden' : ''}` })),
       ['dismiss', r.hidden ? 'restore' : 'hide'].map(action => el('button', { class: `btn btn-sm ${action === 'hide' ? 'btn-danger' : ''}`, text: action[0].toUpperCase() + action.slice(1),
         onclick: async () => { try { await post(`/api/admin/ideas/${r.idea_id}/${action}`); toast('Done.'); load(); } catch (e) { toast(e.message, 'error'); } } })))) :
-      [el('p', { class: 'dlg-sub', text: 'No open reports. The graveyard is peaceful.' })]));
+      [el('p', { class: 'dlg-sub', text: 'No open reports.' })]));
   };
-  main.replaceChildren(el('div', { class: 'page' }, el('section', { class: 'lb-hero' }, el('h1', { text: 'Groundskeeper' }), el('p', { text: 'Reported graves waiting for review.' })),
+  main.replaceChildren(el('div', { class: 'page' }, el('section', { class: 'lb-hero' }, el('h1', { text: 'Moderation' }), el('p', { text: 'Reported obituaries waiting for review.' })),
     el('section', { class: 'card' }, el('h2', { text: 'Open reports' }), list)));
   load().catch(e => toast(e.message, 'error'));
 }
