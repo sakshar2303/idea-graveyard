@@ -4,6 +4,7 @@ import { api, post } from '../api.js';
 import { state } from '../state.js';
 import { graveCard, emptyState, statusPill } from '../components.js';
 import { openSettings, openBury } from '../dialogs.js';
+import { reveal } from '../motion.js';
 
 export async function profileView(main, ctx) {
   let p;
@@ -19,7 +20,9 @@ export async function profileView(main, ctx) {
       el('button', { class: 'tab', 'aria-pressed': String(tab === 'buried'), text: `Buried (${p.stats.buried})`, onclick: () => { tab = 'buried'; paint(); } }),
       el('button', { class: 'tab', 'aria-pressed': String(tab === 'resurrecting'), text: `Resurrecting (${p.stats.resurrecting})`, onclick: () => { tab = 'resurrecting'; paint(); } }));
     const list = tab === 'buried' ? p.buried : p.resurrecting.map(r => r.idea);
-    grid.replaceChildren(...(list.length ? list.map(graveCard) : [emptyState(
+    const cards = list.map(graveCard);
+    reveal(cards, { kind: 'rise' });
+    grid.replaceChildren(...(cards.length ? cards : [emptyState(
       tab === 'buried' ? 'No graves dug yet' : 'Not resurrecting anything yet',
       isMe ? (tab === 'buried' ? 'Bury the first idea from your notes app.' : 'Find an idea worth a second life.') : 'Check back later.',
       isMe && tab === 'buried' ? el('button', { class: 'btn btn-primary', onclick: openBury }, icon('shovel'), 'Bury an idea') : null)]));
@@ -62,7 +65,10 @@ export async function leaderboardView(main) {
       el('section', { class: 'card' }, el('h2', {}, icon('candle'), 'Most mourned'), ideaRank(lb.mostMourned, it => it.counts.candles, 'candles')),
       el('section', { class: 'card' }, el('h2', {}, icon('shovel'), 'Top gravediggers'), rank(lb.gravediggers, u => u.buried, u => `${u.candles} candles received`)),
       el('section', { class: 'card' }, el('h2', {}, icon('skull'), 'Leading causes of death'), bars))));
-  requestAnimationFrame(() => main.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.w; }));
+  reveal([...main.querySelectorAll('.lb .card')]);
+  const barsCard = bars.closest('.card');
+  barsCard.addEventListener('reveal', () => main.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.w; }), { once: true });
+  if (barsCard.classList.contains('in')) main.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.w; });
 }
 
 export async function adminView(main) {

@@ -5,6 +5,7 @@ import { state, requireAuth } from '../state.js';
 import { navigate } from '../router.js';
 import { stoneFace, statusPill, emptyState } from '../components.js';
 import { openResurrect, openReport, confirmDialog } from '../dialogs.js';
+import { reveal } from '../motion.js';
 
 const STATUS_COPY = { planning: 'Planning', building: 'Building', launched: 'Launched' };
 
@@ -39,7 +40,10 @@ function render(main, idea, update) {
       } }, icon('trash'), 'Exhume') : null,
       state.me && !idea.canDelete ? el('button', { class: 'btn btn-ghost btn-sm', onclick: () => openReport(idea) }, icon('flag'), 'Report') : null));
 
-  const right = el('div', {}, pulseCard(idea, update), certificateCard(idea), autopsyCard(idea, update), crewCard(idea, update), eulogyCard(idea, update));
+  const cards = [pulseCard(idea, update), certificateCard(idea), autopsyCard(idea, update), crewCard(idea, update), eulogyCard(idea, update)];
+  const right = el('div', {}, cards);
+  // animate only on first paint, not on every in-place update
+  if (!main.querySelector('.detail')) reveal(cards);
 
   main.replaceChildren(el('div', { class: 'page' },
     el('nav', { class: 'crumbs', 'aria-label': 'Breadcrumb' }, el('a', { href: '/', 'data-link': true, text: 'Graveyard' }), '/', el('span', { text: idea.title })),

@@ -1,5 +1,5 @@
 // Tombstone card and the candle / me-too / resurrect actions shared across pages.
-import { el, icon, avatar, fmtDate, tilt, bump, toast } from './ui.js';
+import { el, icon, fmtDate, tilt, bump, toast } from './ui.js';
 import { post } from './api.js';
 import { requireAuth } from './state.js';
 import { openResurrect } from './dialogs.js';
@@ -14,13 +14,11 @@ export function stoneFace(idea, { big = false } = {}) {
   // the title link stretches over the whole stone; footer controls sit above it
   const title = big ? idea.title : el('a', { class: 'stone-link', href: `/idea/${idea.id}`, 'data-link': true, text: idea.title });
   const stone = el('div', { class: 'stone' },
-    idea.status !== 'dead' ? el('span', { class: 'stone-status' }, statusPill(idea.status)) : null,
     el('div', { class: 'rip', text: ripLabel(idea.status) }),
     el(big ? 'h1' : 'h3', { class: 'engraved' }, title),
-    el('div', { class: 'dates', text: `${fmtDate(idea.buriedAt)}`.toUpperCase() }),
     el('p', { class: 'epitaph', text: `“${idea.epitaph}”` }),
-    el('span', { class: 'cause' }, icon('skull'), idea.cause),
-    idea.tags?.length ? el('div', { class: 'tags' }, idea.tags.map(t => el('span', { class: 'tag', text: `#${t}` }))) : null,
+    el('div', { class: 'cause' }, idea.cause, el('span', { class: 'dot', text: '·' }), fmtDate(idea.buriedAt)),
+    big && idea.tags?.length ? el('div', { class: 'tags' }, idea.tags.map(t => el('a', { class: 'tag', href: `/?tag=${encodeURIComponent(t)}`, 'data-link': true, text: `#${t}` }))) : null,
   );
   wrap.append(stone);
   if (!big) tilt(stone);
@@ -61,9 +59,8 @@ export function graveCard(idea) {
   const paint = () => {
     const { wrap, stone } = stoneFace(idea);
     const foot = el('div', { class: 'stone-foot' },
-      el('div', { class: 'byline' }, avatar(idea.author, 'avatar-sm'), 'Buried by ',
-        el('a', { href: `/u/${encodeURIComponent(idea.author.username)}`, 'data-link': true, text: idea.author.displayName })),
-      actionBar(idea, { onChange: updated => { Object.assign(idea, updated); paint(); } }));
+      actionBar(idea, { onChange: updated => { Object.assign(idea, updated); paint(); } }),
+      el('div', { class: 'byline' }, 'by ', el('a', { href: `/u/${encodeURIComponent(idea.author.username)}`, 'data-link': true, text: idea.author.displayName })));
     stone.append(foot);
     holder.replaceChildren(wrap);
   };
